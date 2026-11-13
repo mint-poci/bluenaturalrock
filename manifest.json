@@ -1,0 +1,19 @@
+{
+  "name": "Portal Peta Daerah",
+  "short_name": "Peta Daerah",
+  "description": "Portal monitoring dan audit peta daerah",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%232563eb'/%3E%3Cpath d='M128 160l85-32 86 32 85-32v224l-85 32-86-32-85 32V160z' fill='none' stroke='%23ffffff' stroke-width='28' stroke-linejoin='round'/%3E%3Cpath d='M213 128v224M299 160v224' stroke='%23ffffff' stroke-width='28'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
