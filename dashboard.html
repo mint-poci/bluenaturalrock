@@ -375,13 +375,13 @@
           <label>Peran / Jabatan</label>
           <select id="newMemberRole">
             <option value="asisten">Asisten Hamba Daerah</option>
-            <option value="hamba_daerah">Hamba Daerah (Admin Penuh)</option>
+            <option value="hamba_daerah">Hamba Daerah</option>
           </select>
         </div>
         <div class="field">
           <label>KDL yang Dikelola</label>
           <select id="newMemberKdl">
-            <option value="Semua KDL">Semua KDL (Pemalang, Tegal Timur, Tegal Barat)</option>
+            <option value="Semua KDL">Semua KDL</option>
             <option value="KDL Pemalang">KDL Pemalang</option>
             <option value="KDL Tegal Timur">KDL Tegal Timur</option>
             <option value="KDL Tegal Barat">KDL Tegal Barat</option>
@@ -597,9 +597,6 @@
       document.getElementById("greetingTime").textContent = getTimeGreeting();
       document.getElementById("greetingName").textContent = `${currentProfile.name || user.email.split("@")[0]}! 👋`;
       document.getElementById("greetingKdl").textContent = `📍 Tugas: ${currentProfile.kdl || "Semua KDL"}`;
-      document.getElementById("greetingTask").textContent = isHambaDaerah
-        ? "Sebagai Hamba Daerah, Anda memantau pembagian peta dan siklus audit 4 bulanan di seluruh KDL."
-        : `Tugas Anda membantu memantau pembagian peta lapangan dan pengecekan 4 bulanan di wilayah ${currentProfile.kdl}.`;
 
       if (isHambaDaerah) {
         document.getElementById("bnavMembers").style.display = "flex";
