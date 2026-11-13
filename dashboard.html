@@ -281,7 +281,7 @@
 <body>
 
   <nav class="top-nav">
-    <div class="brand">🗺️ Peta Daerah</div>
+    <div class="brand">🗺️ Peta Daerah <span class="role-tag" id="roleBadge">Asisten Hamba Daerah</span></div>
     <div class="nav-actions">
       <button class="btn-sm btn-install" id="installPwaBtn">📲 Install</button>
       <button class="btn-sm" id="themeToggle">🌙</button>
@@ -296,6 +296,7 @@
         <div class="welcome-time" id="greetingTime">Selamat siang,</div>
         <div class="welcome-name" id="greetingName">Memuat...</div>
         <div class="kdl-pill" id="greetingKdl">📍 Wilayah Tugas: -</div>
+        <div class="welcome-desc" id="greetingTask">Memuat ringkasan tugas wilayah Anda...</div>
       </div>
 
       <div class="alert-banner" id="homeAuditAlert" onclick="goToTerritories('due')">
@@ -374,13 +375,13 @@
           <label>Peran / Jabatan</label>
           <select id="newMemberRole">
             <option value="asisten">Asisten Hamba Daerah</option>
-            <option value="hamba_daerah">Hamba Daerah</option>
+            <option value="hamba_daerah">Hamba Daerah (Admin Penuh)</option>
           </select>
         </div>
         <div class="field">
           <label>KDL yang Dikelola</label>
           <select id="newMemberKdl">
-            <option value="Semua KDL">Semua KDL</option>
+            <option value="Semua KDL">Semua KDL (Pemalang, Tegal Timur, Tegal Barat)</option>
             <option value="KDL Pemalang">KDL Pemalang</option>
             <option value="KDL Tegal Timur">KDL Tegal Timur</option>
             <option value="KDL Tegal Barat">KDL Tegal Barat</option>
@@ -596,6 +597,9 @@
       document.getElementById("greetingTime").textContent = getTimeGreeting();
       document.getElementById("greetingName").textContent = `${currentProfile.name || user.email.split("@")[0]}! 👋`;
       document.getElementById("greetingKdl").textContent = `📍 Tugas: ${currentProfile.kdl || "Semua KDL"}`;
+      document.getElementById("greetingTask").textContent = isHambaDaerah
+        ? "Sebagai Hamba Daerah, Anda memantau pembagian peta dan siklus audit 4 bulanan di seluruh KDL."
+        : `Tugas Anda membantu memantau pembagian peta lapangan dan pengecekan 4 bulanan di wilayah ${currentProfile.kdl}.`;
 
       if (isHambaDaerah) {
         document.getElementById("bnavMembers").style.display = "flex";
