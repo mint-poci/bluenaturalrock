@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Peta Daerah">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%232563eb'/%3E%3Cpath d='M128 160l85-32 86 32 85-32v224l-85 32-86-32-85 32V160z' fill='none' stroke='%23ffffff' stroke-width='28' stroke-linejoin='round'/%3E%3Cpath d='M213 128v224M299 160v224' stroke='%23ffffff' stroke-width='28'/%3E%3C/svg%3E">
   <title>Portal Peta Daerah</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,7 +27,6 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
     
-    /* Kunci halaman agar tidak pernah geser kanan-kiri di HP */
     html, body {
       max-width: 100%;
       overflow-x: hidden;
@@ -33,7 +38,6 @@
       display: none; flex-direction: column; padding-bottom: 4rem;
     }
 
-    /* Header Mobile-Friendly */
     nav {
       background: var(--card); border-bottom: 1px solid var(--border);
       padding: 0.75rem 1rem; display: flex; justify-content: space-between;
@@ -49,11 +53,11 @@
       border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.78rem;
       padding: 0.4rem 0.65rem; border: 1px solid var(--border); background: var(--bg); color: var(--text);
     }
+    .btn-install { background: var(--primary); color: #fff; border-color: var(--primary); display: none; }
     .btn-logout { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: transparent; }
 
     main { max-width: 760px; width: 100%; margin: 0.75rem auto; padding: 0 0.85rem; }
 
-    /* Bar Navigasi Tab Scrollable di HP */
     .tab-strip {
       display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.4rem;
       margin-bottom: 0.75rem; scrollbar-width: none;
@@ -66,7 +70,6 @@
     }
     .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-    /* Search & Quick Filter */
     .search-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
     .search-row input, .search-row select {
       padding: 0.55rem 0.75rem; border-radius: 10px; border: 1px solid var(--border);
@@ -74,7 +77,6 @@
     }
     .search-row input { flex: 1; }
 
-    /* Compact List View (Mirip List HP) */
     .list-container {
       background: var(--card); border: 1px solid var(--border); border-radius: 12px;
       overflow: hidden;
@@ -110,7 +112,6 @@
     .b-work { background: rgba(37, 99, 235, 0.12); color: var(--primary); }
     .b-due { background: rgba(239, 68, 68, 0.14); color: var(--danger); }
 
-    /* Bottom Sheet / Modal Detail Peta Terkunci Anti-Geser */
     .modal-backdrop {
       position: fixed; inset: 0; width: 100vw; max-width: 100%; overflow-x: hidden;
       background: rgba(15, 23, 42, 0.65);
@@ -138,7 +139,6 @@
       border: 1px solid var(--border); margin-bottom: 1rem; z-index: 1;
     }
 
-    /* Form Detail Sederhana */
     .field { margin-bottom: 0.85rem; max-width: 100%; }
     .field label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--muted); margin-bottom: 0.3rem; }
     .field input, .field select {
@@ -164,7 +164,6 @@
     .btn-warning { background: rgba(245, 158, 11, 0.15); color: #d97706; }
     .btn-success { background: rgba(16, 185, 129, 0.15); color: var(--success); }
 
-    /* Riwayat Ringkas */
     .history-box h4 { font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--muted); }
     .hist-item {
       font-size: 0.8rem; padding: 0.55rem 0; border-bottom: 1px solid var(--border);
@@ -172,7 +171,6 @@
     }
     .hist-item:last-child { border-bottom: none; }
 
-    /* Panel Admin Kelola Anggota */
     .admin-panel {
       background: var(--card); border: 1px solid var(--border); border-radius: 12px;
       padding: 1rem; display: none;
@@ -188,13 +186,13 @@
   <nav>
     <div class="brand">🗺️ Peta Daerah <span class="role-tag" id="roleBadge">Koordinator</span></div>
     <div class="nav-actions">
+      <button class="btn-sm btn-install" id="installPwaBtn">📲 Install</button>
       <button class="btn-sm" id="themeToggle">🌙</button>
       <button class="btn-sm btn-logout" id="logoutBtn">Keluar</button>
     </div>
   </nav>
 
   <main>
-    <!-- Strip Tab -->
     <div class="tab-strip">
       <button class="tab-btn active" data-tab="mine">Peta Saya (<span id="cMine">0</span>)</button>
       <button class="tab-btn" data-tab="all">Semua Peta (<span id="cAll">0</span>)</button>
@@ -202,7 +200,6 @@
       <button class="tab-btn" data-tab="members" id="adminTabBtn" style="display:none;">👥 Kelola Anggota</button>
     </div>
 
-    <!-- Bagian Daftar Peta -->
     <div id="territoriesView">
       <div class="search-row">
         <input type="text" id="searchInput" placeholder="Cari nomor, daerah, atau nama pemegang...">
@@ -217,7 +214,6 @@
       </div>
     </div>
 
-    <!-- Bagian Khusus Admin: Kelola Anggota -->
     <div class="admin-panel" id="membersView">
       <h3 style="font-size: 1rem; margin-bottom: 0.25rem;">Daftar Anggota Terdaftar</h3>
       <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 1rem;">Hanya email di bawah ini yang bisa masuk dan mengakses data peta.</p>
@@ -236,7 +232,6 @@
     </div>
   </main>
 
-  <!-- Modal Detail Peta -->
   <div class="modal-backdrop" id="detailModal">
     <div class="modal">
       <div class="modal-header">
@@ -249,7 +244,6 @@
 
       <div id="mapContainer"></div>
 
-      <!-- Kotak Khusus Admin (Hanya muncul untuk Admin) -->
       <div class="admin-box" id="adminOnlyFields" style="display: none;">
         <div class="admin-box-title">⚙️ Pengaturan Admin</div>
         <div class="field">
@@ -269,7 +263,6 @@
         </div>
       </div>
 
-      <!-- Form Simpel untuk Koordinator (Cuma 3 Field!) -->
       <div class="field">
         <label>Siapa yang mengerjakan</label>
         <input type="text" id="fPemegang" placeholder="Kosongkan jika belum ada">
@@ -300,6 +293,26 @@
     </div>
   </div>
 
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    }
+    let deferredPrompt;
+    const installBtn = document.getElementById("installPwaBtn");
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = "inline-block";
+    });
+    installBtn.addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBtn.style.display = "none";
+    });
+  </script>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
@@ -307,12 +320,13 @@
     import { getDatabase, ref, onValue, update, push, set, remove, get } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
     const firebaseConfig = {
-        apiKey: "AIzaSyCzX0UOkVwvRkUuGBWVcec92AWj2tjQeoE",
-        authDomain: "territory-assistant-40a9b.firebaseapp.com",
-        projectId: "territory-assistant-40a9b",
-        storageBucket: "territory-assistant-40a9b.firebasestorage.app",
-        messagingSenderId: "729411479743",
-        appId: "1:729411479743:web:bc19a775993ff6bf897e0a"
+      apiKey: "AIzaSyCzX0UOkVwvRkUuGBWVcec92AWj2tjQeoE",
+      authDomain: "territory-assistant-40a9b.firebaseapp.com",
+      databaseURL: "https://territory-assistant-40a9b-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "territory-assistant-40a9b",
+      storageBucket: "territory-assistant-40a9b.firebasestorage.app",
+      messagingSenderId: "729411479743",
+      appId: "1:729411479743:web:bc19a775993ff6bf897e0a"
     };
 
     const SUPER_ADMIN = "edenpemalang@gmail.com";
@@ -562,7 +576,6 @@
       updateAutoAuditText(e.target.value, "");
     });
 
-    // Simpan Perubahan
     document.getElementById("saveBtn").addEventListener("click", async () => {
       if (!selectedId) return;
       const t = allTerritories[selectedId];
@@ -590,7 +603,6 @@
       closeModal();
     });
 
-    // Audit 4 Bulan: Lanjut
     document.getElementById("auditContinueBtn").addEventListener("click", async () => {
       if (!selectedId) return;
       const pemegang = document.getElementById("fPemegang").value.trim();
@@ -608,7 +620,6 @@
       openDetail(selectedId);
     });
 
-    // Selesai & Dikembalikan
     document.getElementById("finishBtn").addEventListener("click", async () => {
       if (!selectedId) return;
       const pemegang = document.getElementById("fPemegang").value.trim();
@@ -627,7 +638,6 @@
       openDetail(selectedId);
     });
 
-    // Tab Navigation
     document.querySelectorAll(".tab-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
