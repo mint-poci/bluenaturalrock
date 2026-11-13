@@ -26,7 +26,7 @@
       --border: #334155; --primary: #3b82f6; --hover: #263349;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-    
+
     html, body {
       max-width: 100%;
       overflow-x: hidden;
@@ -35,17 +35,18 @@
 
     body {
       background: var(--bg); color: var(--text); min-height: 100vh;
-      display: none; flex-direction: column; padding-bottom: 4rem;
+      display: none; flex-direction: column; padding-bottom: 5.5rem;
     }
 
-    nav {
+    /* Top Header */
+    nav.top-nav {
       background: var(--card); border-bottom: 1px solid var(--border);
       padding: 0.75rem 1rem; display: flex; justify-content: space-between;
       align-items: center; position: sticky; top: 0; z-index: 100;
     }
-    .brand { font-weight: 700; font-size: 0.98rem; display: flex; align-items: center; gap: 0.4rem; }
+    .brand { font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 0.45rem; }
     .role-tag {
-      font-size: 0.68rem; padding: 0.15rem 0.45rem; border-radius: 6px;
+      font-size: 0.66rem; padding: 0.16rem 0.5rem; border-radius: 6px;
       background: rgba(37, 99, 235, 0.12); color: var(--primary); font-weight: 700;
     }
     .nav-actions { display: flex; gap: 0.45rem; align-items: center; }
@@ -56,26 +57,75 @@
     .btn-install { background: var(--primary); color: #fff; border-color: var(--primary); display: none; }
     .btn-logout { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: transparent; }
 
-    main { max-width: 760px; width: 100%; margin: 0.75rem auto; padding: 0 0.85rem; }
+    main { max-width: 720px; width: 100%; margin: 1rem auto; padding: 0 0.9rem; }
 
+    /* Halaman 1: Beranda Sambutan Personal */
+    .welcome-hero {
+      background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+      color: #ffffff; border-radius: 16px; padding: 1.35rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .welcome-time { font-size: 0.78rem; opacity: 0.88; font-weight: 500; }
+    .welcome-name { font-size: 1.35rem; font-weight: 700; margin-top: 0.15rem; }
+    .kdl-pill {
+      display: inline-block; margin-top: 0.65rem; font-size: 0.78rem; font-weight: 600;
+      background: rgba(255, 255, 255, 0.18); padding: 0.3rem 0.7rem; border-radius: 99px;
+    }
+    .welcome-desc { font-size: 0.82rem; opacity: 0.92; margin-top: 0.6rem; line-height: 1.45; }
+
+    .overview-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem;
+      margin-bottom: 1rem;
+    }
+    .ov-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 0.9rem 0.5rem; text-align: center; cursor: pointer;
+    }
+    .ov-card strong { display: block; font-size: 1.35rem; font-weight: 700; }
+    .ov-card span { display: block; font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
+
+    .alert-banner {
+      background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25);
+      color: var(--danger); border-radius: 12px; padding: 0.85rem 1rem;
+      margin-bottom: 1rem; font-size: 0.83rem; display: none;
+      justify-content: space-between; align-items: center; gap: 0.5rem; cursor: pointer;
+    }
+
+    .section-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 1rem; margin-bottom: 1rem;
+    }
+    .section-title { font-size: 0.88rem; font-weight: 700; margin-bottom: 0.65rem; }
+    .kdl-summary-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.55rem 0; border-bottom: 1px solid var(--border); font-size: 0.83rem;
+    }
+    .kdl-summary-row:last-child { border-bottom: none; }
+
+    /* Halaman 2: Daftar Peta */
     .tab-strip {
       display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.4rem;
       margin-bottom: 0.75rem; scrollbar-width: none;
     }
     .tab-strip::-webkit-scrollbar { display: none; }
     .tab-btn {
-      padding: 0.45rem 0.8rem; border-radius: 99px; border: 1px solid var(--border);
-      background: var(--card); color: var(--muted); font-size: 0.8rem; font-weight: 600;
+      padding: 0.42rem 0.8rem; border-radius: 99px; border: 1px solid var(--border);
+      background: var(--card); color: var(--muted); font-size: 0.78rem; font-weight: 600;
       white-space: nowrap; cursor: pointer;
     }
     .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-    .search-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .search-row { display: flex; gap: 0.5rem; margin-bottom: 0.65rem; }
     .search-row input, .search-row select {
       padding: 0.55rem 0.75rem; border-radius: 10px; border: 1px solid var(--border);
       background: var(--card); color: var(--text); font-size: 0.85rem; min-width: 0;
     }
     .search-row input { flex: 1; }
+
+    .bulk-toolbar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 0.65rem; gap: 0.5rem;
+    }
 
     .list-container {
       background: var(--card); border: 1px solid var(--border); border-radius: 12px;
@@ -84,12 +134,16 @@
     .list-item {
       display: flex; align-items: center; justify-content: space-between;
       padding: 0.75rem 0.9rem; border-bottom: 1px solid var(--border);
-      cursor: pointer; gap: 0.75rem; transition: background 0.12s;
+      cursor: pointer; gap: 0.65rem; transition: background 0.12s;
     }
     .list-item:last-child { border-bottom: none; }
     .list-item:active, .list-item:hover { background: var(--hover); }
     .list-item.is-due { border-left: 3.5px solid var(--danger); }
-    .item-left { display: flex; align-items: center; gap: 0.65rem; min-width: 0; flex: 1; }
+    .bulk-check {
+      width: 18px; height: 18px; accent-color: var(--primary);
+      flex-shrink: 0; display: none; cursor: pointer;
+    }
+    .item-left { display: flex; align-items: center; gap: 0.6rem; min-width: 0; flex: 1; }
     .item-num {
       font-size: 0.75rem; font-weight: 700; color: var(--primary);
       background: rgba(37, 99, 235, 0.1); padding: 0.25rem 0.45rem;
@@ -101,7 +155,7 @@
       overflow: hidden; text-overflow: ellipsis;
     }
     .item-sub {
-      font-size: 0.76rem; color: var(--muted); margin-top: 0.12rem;
+      font-size: 0.75rem; color: var(--muted); margin-top: 0.12rem;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .badge {
@@ -112,6 +166,38 @@
     .b-work { background: rgba(37, 99, 235, 0.12); color: var(--primary); }
     .b-due { background: rgba(239, 68, 68, 0.14); color: var(--danger); }
 
+    /* Bilah Bulk Assign Melayang */
+    .bulk-action-bar {
+      position: fixed; bottom: 4.3rem; left: 50%; transform: translateX(-50%);
+      width: calc(100% - 1.5rem); max-width: 680px;
+      background: var(--card); border: 1.5px solid var(--primary);
+      border-radius: 14px; padding: 0.75rem 0.9rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+      display: none; align-items: center; justify-content: space-between;
+      gap: 0.5rem; z-index: 120; flex-wrap: wrap;
+    }
+    .bulk-action-bar select {
+      padding: 0.45rem 0.65rem; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text); font-size: 0.82rem; font-weight: 600;
+    }
+
+    /* Bottom Navigation Bar (Ala Aplikasi Mobile) */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--card); border-top: 1px solid var(--border);
+      display: flex; justify-content: space-around; align-items: center;
+      padding: 0.5rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom));
+      z-index: 110;
+    }
+    .bnav-btn {
+      background: transparent; border: none; color: var(--muted);
+      display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
+      font-size: 0.72rem; font-weight: 600; cursor: pointer; flex: 1;
+    }
+    .bnav-btn span.icon { font-size: 1.15rem; }
+    .bnav-btn.active { color: var(--primary); }
+
+    /* Modal Detail Peta Terkunci Anti-Geser */
     .modal-backdrop {
       position: fixed; inset: 0; width: 100vw; max-width: 100%; overflow-x: hidden;
       background: rgba(15, 23, 42, 0.65);
@@ -171,20 +257,16 @@
     }
     .hist-item:last-child { border-bottom: none; }
 
-    .admin-panel {
-      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-      padding: 1rem; display: none;
-    }
     .member-row {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; gap: 0.5rem;
+      padding: 0.65rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; gap: 0.5rem;
     }
   </style>
 </head>
 <body>
 
-  <nav>
-    <div class="brand">🗺️ Peta Daerah <span class="role-tag" id="roleBadge">Koordinator</span></div>
+  <nav class="top-nav">
+    <div class="brand">🗺️ Peta Daerah <span class="role-tag" id="roleBadge">Asisten Hamba Daerah</span></div>
     <div class="nav-actions">
       <button class="btn-sm btn-install" id="installPwaBtn">📲 Install</button>
       <button class="btn-sm" id="themeToggle">🌙</button>
@@ -193,50 +275,149 @@
   </nav>
 
   <main>
-    <div class="tab-strip">
-      <button class="tab-btn active" data-tab="mine">Peta Saya (<span id="cMine">0</span>)</button>
-      <button class="tab-btn" data-tab="all">Semua Peta (<span id="cAll">0</span>)</button>
-      <button class="tab-btn" data-tab="due">⚠️ Perlu Audit (<span id="cDue">0</span>)</button>
-      <button class="tab-btn" data-tab="members" id="adminTabBtn" style="display:none;">👥 Kelola Anggota</button>
-    </div>
+    <!-- HALAMAN 1: BERANDA SAMBUTAN PERSONAL -->
+    <section id="pageHome">
+      <div class="welcome-hero">
+        <div class="welcome-time" id="greetingTime">Selamat siang,</div>
+        <div class="welcome-name" id="greetingName">Memuat...</div>
+        <div class="kdl-pill" id="greetingKdl">📍 Wilayah Tugas: -</div>
+        <div class="welcome-desc" id="greetingTask">Memuat ringkasan tugas wilayah Anda...</div>
+      </div>
 
-    <div id="territoriesView">
+      <div class="alert-banner" id="homeAuditAlert" onclick="goToTerritories('due')">
+        <span>⚠️ Ada <strong id="alertDueCount">0</strong> peta di wilayah Anda yang sudah masuk jadwal cek 4 bulan.</span>
+        <strong>Lihat →</strong>
+      </div>
+
+      <div class="overview-grid">
+        <div class="ov-card" onclick="goToTerritories('mine')">
+          <strong id="ovTotal">0</strong>
+          <span>Peta Wilayah</span>
+        </div>
+        <div class="ov-card" onclick="goToTerritories('mine', 'work')">
+          <strong id="ovWork" style="color: var(--primary);">0</strong>
+          <span>Dikerjakan</span>
+        </div>
+        <div class="ov-card" onclick="goToTerritories('mine', 'avail')">
+          <strong id="ovAvail" style="color: var(--success);">0</strong>
+          <span>Tersedia</span>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">Sebaran Peta per KDL</div>
+        <div id="kdlBreakdown"></div>
+      </div>
+
+      <button class="btn btn-primary" onclick="goToTerritories('mine')">🗺️ Kelola Peta Wilayah Saya →</button>
+    </section>
+
+    <!-- HALAMAN 2: DAFTAR PETA -->
+    <section id="pageTerritories" style="display: none;">
+      <div class="tab-strip">
+        <button class="tab-btn active" data-tab="mine">Wilayah Saya (<span id="cMine">0</span>)</button>
+        <button class="tab-btn" data-tab="all">Semua Peta (<span id="cAll">0</span>)</button>
+        <button class="tab-btn" data-tab="due">⚠️ Perlu Audit (<span id="cDue">0</span>)</button>
+      </div>
+
       <div class="search-row">
-        <input type="text" id="searchInput" placeholder="Cari nomor, daerah, atau nama pemegang...">
-        <select id="statusFilter">
-          <option value="">Semua</option>
-          <option value="avail">Kosong</option>
-          <option value="work">Dikerjakan</option>
+        <input type="text" id="searchInput" placeholder="Cari nomor, daerah, atau pemegang...">
+        <select id="kdlFilter">
+          <option value="">Semua KDL</option>
+          <option value="KDL Pemalang">KDL Pemalang</option>
+          <option value="KDL Tegal Timur">KDL Tegal Timur</option>
+          <option value="KDL Tegal Barat">KDL Tegal Barat</option>
+          <option value="UNASSIGNED">Belum Masuk KDL</option>
         </select>
       </div>
+
+      <!-- Toolbar Bulk Assign khusus Hamba Daerah -->
+      <div class="bulk-toolbar" id="adminBulkBar" style="display: none;">
+        <button class="btn-sm" id="toggleBulkBtn">☑️ Pilih Banyak (Bulk KDL)</button>
+        <button class="btn-sm" id="selectAllVisibleBtn" style="display: none;">Centang Semua Tampil</button>
+      </div>
+
       <div class="list-container" id="territoryList">
         <div style="padding: 1.5rem; text-align: center; color: var(--muted); font-size: 0.85rem;">Memuat daftar peta...</div>
       </div>
-    </div>
+    </section>
 
-    <div class="admin-panel" id="membersView">
-      <h3 style="font-size: 1rem; margin-bottom: 0.25rem;">Daftar Anggota Terdaftar</h3>
-      <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 1rem;">Hanya email di bawah ini yang bisa masuk dan mengakses data peta.</p>
+    <!-- HALAMAN 3: KELOLA ANGGOTA (KHUSUS HAMBA DAERAH) -->
+    <section id="pageMembers" style="display: none;">
+      <div class="section-card">
+        <h3 style="font-size: 1rem; margin-bottom: 0.25rem;">Anggota & Pembagian KDL</h3>
+        <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 1rem;">Daftarkan email Hamba Daerah & Asisten Hamba Daerah beserta KDL tugasnya.</p>
 
-      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
-        <input type="email" id="newMemberEmail" placeholder="email.koordinator@gmail.com" style="flex:1; min-width: 180px; padding: 0.55rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-        <input type="text" id="newMemberName" placeholder="Nama Panggilan" style="width: 130px; padding: 0.55rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-        <select id="newMemberRole" style="padding: 0.55rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-          <option value="koordinator">Koordinator</option>
-          <option value="admin">Admin</option>
-        </select>
-        <button class="btn btn-primary" id="addMemberBtn" style="width: auto; padding: 0.55rem 1rem;">+ Tambah</button>
+        <div class="field">
+          <label>Nama Panggilan</label>
+          <input type="text" id="newMemberName" placeholder="Contoh: Budi">
+        </div>
+        <div class="field">
+          <label>Alamat Email Google</label>
+          <input type="email" id="newMemberEmail" placeholder="budi@gmail.com">
+        </div>
+        <div class="field">
+          <label>Peran / Jabatan</label>
+          <select id="newMemberRole">
+            <option value="asisten">Asisten Hamba Daerah</option>
+            <option value="hamba_daerah">Hamba Daerah (Admin Penuh)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>KDL yang Dikelola</label>
+          <select id="newMemberKdl">
+            <option value="Semua KDL">Semua KDL (Pemalang, Tegal Timur, Tegal Barat)</option>
+            <option value="KDL Pemalang">KDL Pemalang</option>
+            <option value="KDL Tegal Timur">KDL Tegal Timur</option>
+            <option value="KDL Tegal Barat">KDL Tegal Barat</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="addMemberBtn">+ Simpan Anggota</button>
       </div>
 
-      <div id="memberList"></div>
-    </div>
+      <div class="section-card">
+        <div class="section-title">Daftar Anggota Terdaftar</div>
+        <div id="memberList"></div>
+      </div>
+    </section>
   </main>
 
+  <!-- Bilah Aksi Bulk Assign Melayang -->
+  <div class="bulk-action-bar" id="bulkActionBar">
+    <span style="font-size: 0.82rem; font-weight: 700;"><span id="selectedCount">0</span> dipilih</span>
+    <div style="display: flex; gap: 0.4rem; align-items: center;">
+      <select id="bulkTargetKdl">
+        <option value="KDL Pemalang">KDL Pemalang</option>
+        <option value="KDL Tegal Timur">KDL Tegal Timur</option>
+        <option value="KDL Tegal Barat">KDL Tegal Barat</option>
+        <option value="">Kosongkan KDL</option>
+      </select>
+      <button class="btn-sm" style="background: var(--primary); color: #fff; border: none;" id="applyBulkBtn">Terapkan</button>
+    </div>
+  </div>
+
+  <!-- Navigasi Bawah Mobile -->
+  <nav class="bottom-nav">
+    <button class="bnav-btn active" data-page="pageHome">
+      <span class="icon">🏠</span>
+      <span>Beranda</span>
+    </button>
+    <button class="bnav-btn" data-page="pageTerritories">
+      <span class="icon">🗺️</span>
+      <span>Daftar Peta</span>
+    </button>
+    <button class="bnav-btn" data-page="pageMembers" id="bnavMembers" style="display: none;">
+      <span class="icon">👥</span>
+      <span>Anggota</span>
+    </button>
+  </nav>
+
+  <!-- Modal Detail Peta -->
   <div class="modal-backdrop" id="detailModal">
     <div class="modal">
       <div class="modal-header">
         <div>
-          <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary);" id="mSubHeader">#001 • Umum</div>
+          <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary);" id="mSubHeader">#001 • KDL Pemalang</div>
           <h2 style="font-size: 1.15rem; margin-top: 0.1rem; word-wrap: break-word;" id="mNama">Nama Daerah</h2>
         </div>
         <button class="close-btn" id="closeModalBtn">✕</button>
@@ -244,12 +425,16 @@
 
       <div id="mapContainer"></div>
 
+      <!-- Kotak Khusus Hamba Daerah (Admin) -->
       <div class="admin-box" id="adminOnlyFields" style="display: none;">
-        <div class="admin-box-title">⚙️ Pengaturan Admin</div>
+        <div class="admin-box-title">⚙️ Pengaturan Hamba Daerah</div>
         <div class="field">
-          <label>Koordinator Penanggung Jawab</label>
-          <select id="fKoordinator">
-            <option value="">-- Belum Di-assign --</option>
+          <label>Kelompok Dinas Lapangan (KDL)</label>
+          <select id="fKdl">
+            <option value="">-- Belum Diatur --</option>
+            <option value="KDL Pemalang">KDL Pemalang</option>
+            <option value="KDL Tegal Timur">KDL Tegal Timur</option>
+            <option value="KDL Tegal Barat">KDL Tegal Barat</option>
           </select>
         </div>
         <div class="field" style="margin-bottom: 0;">
@@ -263,6 +448,7 @@
         </div>
       </div>
 
+      <!-- Form Simpel untuk Asisten Hamba Daerah (Cuma 3 Field!) -->
       <div class="field">
         <label>Siapa yang mengerjakan</label>
         <input type="text" id="fPemegang" placeholder="Kosongkan jika belum ada">
@@ -277,7 +463,7 @@
       </div>
 
       <div class="auto-info" id="autoAuditInfo">
-        📅 Jadwal cek 4 bulan akan dihitung otomatis saat tanggal mulai diisi.
+        📅 Jadwal cek 4 bulan akan otomatis dihitung setelah tanggal mulai diisi.
       </div>
 
       <div class="btn-group">
@@ -335,16 +521,28 @@
     const db = getDatabase(app, "https://territory-assistant-40a9b-default-rtdb.asia-southeast1.firebasedatabase.app");
 
     let currentUser = null;
-    let isAdmin = false;
+    let currentProfile = { name: "Eden", role: "hamba_daerah", kdl: "Semua KDL" };
+    let isHambaDaerah = false;
     let allTerritories = {};
     let allMembers = {};
     let activeTab = "mine";
+    let statusQuickFilter = "";
     let selectedId = null;
+    let bulkMode = false;
+    let selectedBulkIds = new Set();
     let map = null;
     let currentPolygon = null;
 
     function emailToKey(email) {
       return email.toLowerCase().trim().replace(/\./g, ",");
+    }
+
+    function getTimeGreeting() {
+      const h = new Date().getHours();
+      if (h < 11) return "Selamat pagi,";
+      if (h < 15) return "Selamat siang,";
+      if (h < 18) return "Selamat sore,";
+      return "Selamat malam,";
     }
 
     onAuthStateChanged(auth, async (user) => {
@@ -356,33 +554,46 @@
       const userEmail = user.email.toLowerCase();
       const userKey = emailToKey(userEmail);
 
-      if (userEmail === SUPER_ADMIN) {
-        await set(ref(db, `users/${userKey}`), { email: userEmail, name: "Eden (Super Admin)", role: "admin" });
-      }
-
       const snap = await get(ref(db, `users/${userKey}`));
-      if (!snap.exists() && userEmail !== SUPER_ADMIN) {
-        alert("Maaf, email Anda (" + user.email + ") belum terdaftar sebagai koordinator. Hubungi Admin.");
-        await signOut(auth);
-        window.location.href = "index.html";
-        return;
+      if (!snap.exists()) {
+        if (userEmail === SUPER_ADMIN) {
+          currentProfile = { email: userEmail, name: "Eden", role: "hamba_daerah", kdl: "Semua KDL" };
+          await set(ref(db, `users/${userKey}`), currentProfile);
+        } else {
+          alert("Maaf, email Anda (" + user.email + ") belum terdaftar. Hubungi Hamba Daerah.");
+          await signOut(auth);
+          window.location.href = "index.html";
+          return;
+        }
+      } else {
+        currentProfile = snap.val();
       }
 
-      const userData = snap.val() || { role: "admin" };
-      isAdmin = (userEmail === SUPER_ADMIN || userData.role === "admin");
+      isHambaDaerah = (userEmail === SUPER_ADMIN || currentProfile.role === "hamba_daerah");
 
       document.body.style.display = "flex";
-      document.getElementById("roleBadge").textContent = isAdmin ? "Admin" : "Koordinator";
-      if (isAdmin) {
-        document.getElementById("adminTabBtn").style.display = "inline-block";
+      document.getElementById("roleBadge").textContent = isHambaDaerah ? "Hamba Daerah" : "Asisten HD";
+      document.getElementById("greetingTime").textContent = getTimeGreeting();
+      document.getElementById("greetingName").textContent = `${currentProfile.name || user.email.split("@")[0]}! 👋`;
+      document.getElementById("greetingKdl").textContent = `📍 Tugas: ${currentProfile.kdl || "Semua KDL"}`;
+      document.getElementById("greetingTask").textContent = isHambaDaerah
+        ? "Sebagai Hamba Daerah, Anda memantau pembagian peta dan siklus audit 4 bulanan di seluruh KDL."
+        : `Tugas Anda membantu memantau pembagian peta lapangan dan pengecekan 4 bulanan di wilayah ${currentProfile.kdl}.`;
+
+      if (isHambaDaerah) {
+        document.getElementById("bnavMembers").style.display = "flex";
         document.getElementById("adminOnlyFields").style.display = "block";
-        activeTab = "all";
-        document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === "all"));
+        document.getElementById("adminBulkBar").style.display = "flex";
       }
 
       listenMembers();
       listenTerritories();
     });
+
+    function isMyTerritory(t) {
+      if (isHambaDaerah || currentProfile.kdl === "Semua KDL") return true;
+      return (t.kdl || "") === currentProfile.kdl;
+    }
 
     function addFourMonths(dateStr) {
       if (!dateStr) return "";
@@ -406,33 +617,34 @@
 
     function renderMembers() {
       const listEl = document.getElementById("memberList");
-      const selectEl = document.getElementById("fKoordinator");
       const membersArr = Object.values(allMembers);
 
-      listEl.innerHTML = membersArr.map(m => `
-        <div class="member-row">
-          <div style="min-width:0; flex:1;">
-            <strong>${m.name || m.email}</strong> <span class="role-tag">${m.role}</span>
-            <div style="font-size:0.75rem; color:var(--muted); overflow:hidden; text-overflow:ellipsis;">${m.email}</div>
+      listEl.innerHTML = membersArr.map(m => {
+        const roleLabel = m.role === "hamba_daerah" ? "Hamba Daerah" : "Asisten Hamba Daerah";
+        return `
+          <div class="member-row">
+            <div style="min-width:0; flex:1;">
+              <strong>${m.name || m.email}</strong> <span class="role-tag">${roleLabel}</span>
+              <div style="font-size:0.76rem; color:var(--primary); font-weight:600; margin-top:0.15rem;">📍 ${m.kdl || 'Semua KDL'}</div>
+              <div style="font-size:0.73rem; color:var(--muted); overflow:hidden; text-overflow:ellipsis;">${m.email}</div>
+            </div>
+            ${m.email !== SUPER_ADMIN ? `<button class="btn-sm btn-logout" onclick="removeMember('${m.email}')">Hapus</button>` : '<span style="font-size:0.72rem; color:var(--muted);">Utama</span>'}
           </div>
-          ${m.email !== SUPER_ADMIN ? `<button class="btn-sm btn-logout" onclick="removeMember('${m.email}')">Hapus</button>` : '<span style="font-size:0.72rem; color:var(--muted);">Utama</span>'}
-        </div>
-      `).join("");
-
-      selectEl.innerHTML = `<option value="">-- Belum Di-assign --</option>` + membersArr.map(m =>
-        `<option value="${m.email}">${m.name || m.email} (${m.email})</option>`
-      ).join("");
+        `;
+      }).join("");
     }
 
     document.getElementById("addMemberBtn").addEventListener("click", async () => {
       const email = document.getElementById("newMemberEmail").value.trim().toLowerCase();
       const name = document.getElementById("newMemberName").value.trim();
       const role = document.getElementById("newMemberRole").value;
+      const kdl = document.getElementById("newMemberKdl").value;
       if (!email) return alert("Masukkan alamat email anggota.");
 
-      await set(ref(db, `users/${emailToKey(email)}`), { email, name: name || email.split("@")[0], role });
+      await set(ref(db, `users/${emailToKey(email)}`), { email, name: name || email.split("@")[0], role, kdl });
       document.getElementById("newMemberEmail").value = "";
       document.getElementById("newMemberName").value = "";
+      alert("Anggota berhasil disimpan!");
     });
 
     window.removeMember = async function(email) {
@@ -443,38 +655,76 @@
     function listenTerritories() {
       onValue(ref(db, "territories"), (snap) => {
         allTerritories = snap.val() || {};
+        renderHomeOverview();
         renderList();
+      });
+    }
+
+    function renderHomeOverview() {
+      const list = Object.values(allTerritories);
+      const mineList = list.filter(t => isMyTerritory(t));
+      const workingCount = mineList.filter(t => t.pemegang && t.pemegang.trim() !== "").length;
+      const availCount = mineList.length - workingCount;
+      const dueCount = mineList.filter(t => isAuditDue(t)).length;
+
+      document.getElementById("ovTotal").textContent = mineList.length;
+      document.getElementById("ovWork").textContent = workingCount;
+      document.getElementById("ovAvail").textContent = availCount;
+
+      const alertEl = document.getElementById("homeAuditAlert");
+      if (dueCount > 0) {
+        alertEl.style.display = "flex";
+        document.getElementById("alertDueCount").textContent = dueCount;
+      } else {
+        alertEl.style.display = "none";
+      }
+
+      const kdls = ["KDL Pemalang", "KDL Tegal Timur", "KDL Tegal Barat"];
+      const unassigned = list.filter(t => !t.kdl).length;
+      let html = kdls.map(k => {
+        const sub = list.filter(t => t.kdl === k);
+        const active = sub.filter(t => t.pemegang && t.pemegang.trim() !== "").length;
+        return `<div class="kdl-summary-row"><span><strong>${k}</strong></span><span style="color:var(--muted);">${active} aktif / ${sub.length} peta</span></div>`;
+      }).join("");
+      if (unassigned > 0) {
+        html += `<div class="kdl-summary-row"><span style="color:var(--warning);">Belum masuk KDL</span><span style="color:var(--muted);">${unassigned} peta</span></div>`;
+      }
+      document.getElementById("kdlBreakdown").innerHTML = html;
+    }
+
+    function getVisibleTerritories() {
+      const list = Object.values(allTerritories);
+      const search = document.getElementById("searchInput").value.toLowerCase();
+      const kdlFilter = document.getElementById("kdlFilter").value;
+
+      let source = list;
+      if (activeTab === "mine") source = list.filter(t => isMyTerritory(t));
+      if (activeTab === "due") source = list.filter(t => isAuditDue(t) && isMyTerritory(t));
+
+      return source.filter(t => {
+        const isWorking = t.pemegang && t.pemegang.trim() !== "";
+        if (statusQuickFilter === "avail" && isWorking) return false;
+        if (statusQuickFilter === "work" && !isWorking) return false;
+        if (kdlFilter === "UNASSIGNED" && t.kdl) return false;
+        if (kdlFilter && kdlFilter !== "UNASSIGNED" && t.kdl !== kdlFilter) return false;
+        if (search) {
+          const hay = `${t.nomor} ${t.nama} ${t.pemegang} ${t.kdl || ''}`.toLowerCase();
+          if (!hay.includes(search)) return false;
+        }
+        return true;
       });
     }
 
     function renderList() {
       const list = Object.values(allTerritories);
-      const myEmail = currentUser.email.toLowerCase();
-      const search = document.getElementById("searchInput").value.toLowerCase();
-      const statFilter = document.getElementById("statusFilter").value;
-
-      const mineList = list.filter(t => (t.koordinator || "").toLowerCase() === myEmail);
-      const dueList = list.filter(t => isAuditDue(t) && (isAdmin || (t.koordinator || "").toLowerCase() === myEmail));
+      const mineList = list.filter(t => isMyTerritory(t));
+      const dueList = mineList.filter(t => isAuditDue(t));
 
       document.getElementById("cMine").textContent = mineList.length;
       document.getElementById("cAll").textContent = list.length;
       document.getElementById("cDue").textContent = dueList.length;
 
-      let sourceList = list;
-      if (activeTab === "mine") sourceList = mineList;
-      if (activeTab === "due") sourceList = dueList;
-
-      const filtered = sourceList.filter(t => {
-        const isWorking = t.pemegang && t.pemegang.trim() !== "";
-        if (statFilter === "avail" && isWorking) return false;
-        if (statFilter === "work" && !isWorking) return false;
-        if (search) {
-          const hay = `${t.nomor} ${t.nama} ${t.pemegang}`.toLowerCase();
-          if (!hay.includes(search)) return false;
-        }
-        return true;
-      });
-
+      const filtered = getVisibleTerritories();
       const container = document.getElementById("territoryList");
       if (filtered.length === 0) {
         container.innerHTML = `<div style="padding: 1.5rem; text-align: center; color: var(--muted); font-size: 0.85rem;">Tidak ada peta di daftar ini.</div>`;
@@ -488,12 +738,16 @@
         if (due) badge = `<span class="badge b-due">Audit!</span>`;
         else if (isWorking) badge = `<span class="badge b-work">Aktif</span>`;
 
+        const kdlLabel = t.kdl || "Belum diatur KDL";
         const subText = isWorking
-          ? `👤 ${t.pemegang} • Mulai ${t.tanggal_mulai || '-'}`
-          : `${t.kategori || 'Umum'}${isAdmin && t.koordinator ? ' • Koord: ' + t.koordinator.split('@')[0] : ''}`;
+          ? `👤 ${t.pemegang} • ${kdlLabel}`
+          : `${kdlLabel} • ${t.kategori || 'Umum'}`;
+
+        const checked = selectedBulkIds.has(t.id) ? "checked" : "";
 
         return `
-          <div class="list-item ${due ? 'is-due' : ''}" onclick="openDetail('${t.id}')">
+          <div class="list-item ${due ? 'is-due' : ''}" onclick="handleItemClick('${t.id}')">
+            <input type="checkbox" class="bulk-check" style="display:${bulkMode ? 'block' : 'none'};" ${checked} onclick="event.stopPropagation(); toggleBulkItem('${t.id}')">
             <div class="item-left">
               <span class="item-num">#${t.nomor}</span>
               <div class="item-info">
@@ -507,6 +761,80 @@
       }).join("");
     }
 
+    window.handleItemClick = function(id) {
+      if (bulkMode) {
+        toggleBulkItem(id);
+        renderList();
+      } else {
+        openDetail(id);
+      }
+    };
+
+    window.toggleBulkItem = function(id) {
+      if (selectedBulkIds.has(id)) selectedBulkIds.delete(id);
+      else selectedBulkIds.add(id);
+      document.getElementById("selectedCount").textContent = selectedBulkIds.size;
+      document.getElementById("bulkActionBar").style.display = selectedBulkIds.size > 0 ? "flex" : "none";
+    };
+
+    document.getElementById("toggleBulkBtn").addEventListener("click", () => {
+      bulkMode = !bulkMode;
+      selectedBulkIds.clear();
+      document.getElementById("toggleBulkBtn").textContent = bulkMode ? "✕ Batal Pilih Banyak" : "☑️ Pilih Banyak (Bulk KDL)";
+      document.getElementById("selectAllVisibleBtn").style.display = bulkMode ? "inline-block" : "none";
+      document.getElementById("bulkActionBar").style.display = "none";
+      renderList();
+    });
+
+    document.getElementById("selectAllVisibleBtn").addEventListener("click", () => {
+      const visible = getVisibleTerritories();
+      visible.forEach(t => selectedBulkIds.add(t.id));
+      document.getElementById("selectedCount").textContent = selectedBulkIds.size;
+      document.getElementById("bulkActionBar").style.display = selectedBulkIds.size > 0 ? "flex" : "none";
+      renderList();
+    });
+
+    document.getElementById("applyBulkBtn").addEventListener("click", async () => {
+      if (selectedBulkIds.size === 0) return;
+      const targetKdl = document.getElementById("bulkTargetKdl").value;
+      const updates = {};
+      selectedBulkIds.forEach(id => {
+        updates[`territories/${id}/kdl`] = targetKdl;
+      });
+      await update(ref(db), updates);
+      alert(`${selectedBulkIds.size} peta berhasil dipindahkan ke ${targetKdl || 'Belum Diatur'}!`);
+      bulkMode = false;
+      selectedBulkIds.clear();
+      document.getElementById("toggleBulkBtn").textContent = "☑️ Pilih Banyak (Bulk KDL)";
+      document.getElementById("selectAllVisibleBtn").style.display = "none";
+      document.getElementById("bulkActionBar").style.display = "none";
+      renderList();
+    });
+
+    window.switchPage = function(pageId) {
+      ["pageHome", "pageTerritories", "pageMembers"].forEach(p => {
+        document.getElementById(p).style.display = p === pageId ? "block" : "none";
+      });
+      document.querySelectorAll(".bnav-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.page === pageId);
+      });
+      if (pageId !== "pageTerritories") {
+        document.getElementById("bulkActionBar").style.display = "none";
+      }
+    };
+
+    window.goToTerritories = function(tab, statusFilter = "") {
+      activeTab = tab;
+      statusQuickFilter = statusFilter;
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+      switchPage("pageTerritories");
+      renderList();
+    };
+
+    document.querySelectorAll(".bnav-btn").forEach(btn => {
+      btn.addEventListener("click", () => switchPage(btn.dataset.page));
+    });
+
     function closeModal() {
       document.getElementById("detailModal").style.display = "none";
       document.body.style.overflow = "";
@@ -517,10 +845,10 @@
       const t = allTerritories[id];
       if (!t) return;
 
-      document.getElementById("mSubHeader").textContent = `PETA #${t.nomor} • ${t.kategori || 'Umum'}`;
+      document.getElementById("mSubHeader").textContent = `PETA #${t.nomor} • ${t.kdl || 'Belum diatur KDL'} • ${t.kategori || 'Umum'}`;
       document.getElementById("mNama").textContent = t.nama;
-      if (isAdmin) {
-        document.getElementById("fKoordinator").value = t.koordinator || "";
+      if (isHambaDaerah) {
+        document.getElementById("fKdl").value = t.kdl || "";
         document.getElementById("fKategori").value = t.kategori || "Umum";
       }
 
@@ -594,8 +922,8 @@
         catatan: document.getElementById("fCatatan").value.trim()
       };
 
-      if (isAdmin) {
-        payload.koordinator = document.getElementById("fKoordinator").value;
+      if (isHambaDaerah) {
+        payload.kdl = document.getElementById("fKdl").value;
         payload.kategori = document.getElementById("fKategori").value;
       }
 
@@ -643,16 +971,14 @@
         document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
         activeTab = btn.dataset.tab;
-        const isMembers = activeTab === "members";
-        document.getElementById("territoriesView").style.display = isMembers ? "none" : "block";
-        document.getElementById("membersView").style.display = isMembers ? "block" : "none";
-        if (!isMembers) renderList();
+        statusQuickFilter = "";
+        renderList();
       });
     });
 
     document.getElementById("closeModalBtn").addEventListener("click", closeModal);
     document.getElementById("searchInput").addEventListener("input", renderList);
-    document.getElementById("statusFilter").addEventListener("change", renderList);
+    document.getElementById("kdlFilter").addEventListener("change", renderList);
     document.getElementById("logoutBtn").addEventListener("click", async () => { await signOut(auth); window.location.href = "index.html"; });
 
     const themeToggle = document.getElementById("themeToggle");
