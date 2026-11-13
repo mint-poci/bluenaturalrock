@@ -197,15 +197,18 @@
     .bnav-btn span.icon { font-size: 1.15rem; }
     .bnav-btn.active { color: var(--primary); }
 
-    /* Modal Detail Peta Terkunci Anti-Geser */
+    /* Modal Detail Peta Terkunci Anti-Geser & Anti-Scroll Tembus */
     .modal-backdrop {
-      position: fixed; inset: 0; width: 100vw; max-width: 100%; overflow-x: hidden;
+      position: fixed; inset: 0; width: 100vw; max-width: 100%; overflow: hidden;
+      overscroll-behavior: contain;
       background: rgba(15, 23, 42, 0.65);
       display: none; align-items: flex-end; justify-content: center; z-index: 200;
     }
     .modal {
       background: var(--card); width: 100%; max-width: 100%; max-height: 92vh;
-      overflow-y: auto; overflow-x: hidden; border-radius: 20px 20px 0 0; padding: 1.25rem;
+      overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 20px 20px 0 0; padding: 1.25rem;
     }
     @media (min-width: 640px) {
       .modal-backdrop { align-items: center; padding: 1rem; }
@@ -852,6 +855,7 @@
 
     function closeModal() {
       document.getElementById("detailModal").style.display = "none";
+      document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
     }
 
@@ -888,8 +892,11 @@
             </div>
           `).join("");
 
+      const modalEl = document.querySelector("#detailModal .modal");
       document.getElementById("detailModal").style.display = "flex";
+      document.documentElement.style.overflow = "hidden";
       document.body.style.overflow = "hidden";
+      if (modalEl) modalEl.scrollTop = 0;
 
       setTimeout(() => {
         if (!map) {
