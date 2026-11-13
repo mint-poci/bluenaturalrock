@@ -1,226 +1,510 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="light">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Portal Peta Daerah — Karsalana</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Peta Daerah">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%232563eb'/%3E%3Cpath d='M128 160l85-32 86 32 85-32v224l-85 32-86-32-85 32V160z' fill='none' stroke='%23ffffff' stroke-width='28' stroke-linejoin='round'/%3E%3Cpath d='M213 128v224M299 160v224' stroke='%23ffffff' stroke-width='28'/%3E%3C/svg%3E">
+  <title>Portal Peta Daerah</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     :root {
-      --bg: #f8fafc;
-      --surface: #ffffff;
-      --border: #e2e8f0;
-      --text: #0f172a;
-      --muted: #64748b;
-      --primary: #2563eb;
-      --primary-soft: #eff6ff;
-      --success: #16a34a;
-      --success-soft: #dcfce7;
-      --warning: #d97706;
-      --warning-soft: #fef3c7;
+      --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #64748b;
+      --border: #e2e8f0; --primary: #2563eb; --success: #10b981;
+      --warning: #f59e0b; --danger: #ef4444; --hover: #f1f5f9;
+    }
+    [data-theme="dark"] {
+      --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --muted: #94a3b8;
+      --border: #334155; --primary: #3b82f6; --hover: #263349;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
+      overscroll-behavior-x: none;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-    body { background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-
-    .form-group { margin-bottom: 14px; }
-    .form-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--muted); }
-    .form-control {
-      width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
-      font-size: 14px; outline: none; transition: 0.2s; background: #fff;
-    }
-    .form-control:focus { border-color: var(--primary); }
-
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
-      border: none; cursor: pointer; transition: 0.2s;
-    }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-primary:hover { background: #1d4ed8; }
-    .btn-block { width: 100%; }
-
-    /* Header */
-    header {
-      background: var(--surface); border-bottom: 1px solid var(--border);
-      padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;
-      flex-shrink: 0;
-    }
-    .brand { display: flex; align-items: center; gap: 10px; }
-    .brand h1 { font-size: 16px; font-weight: 700; }
-    .header-badge {
-      font-size: 12px; background: var(--primary-soft); color: var(--primary);
-      padding: 4px 10px; border-radius: 999px; font-weight: 600;
+    body {
+      background: var(--bg); color: var(--text); min-height: 100vh;
+      display: none; flex-direction: column; padding-bottom: 5.5rem;
     }
 
-    /* Main Layout */
-    .workspace { display: flex; flex: 1; overflow: hidden; }
-    .sidebar {
-      width: 430px; max-width: 100%; background: var(--surface); border-right: 1px solid var(--border);
-      display: flex; flex-direction: column; flex-shrink: 0;
+    /* Top Header */
+    nav.top-nav {
+      background: var(--card); border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1rem; display: flex; justify-content: space-between;
+      align-items: center; position: sticky; top: 0; z-index: 100;
     }
-    .controls { padding: 14px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
-    .kdl-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+    .brand { font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 0.45rem; }
+    .role-tag {
+      font-size: 0.66rem; padding: 0.16rem 0.5rem; border-radius: 6px;
+      background: rgba(37, 99, 235, 0.12); color: var(--primary); font-weight: 700;
+    }
+    .nav-actions { display: flex; gap: 0.45rem; align-items: center; }
+    .btn-sm {
+      border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.78rem;
+      padding: 0.4rem 0.65rem; border: 1px solid var(--border); background: var(--bg); color: var(--text);
+    }
+    .btn-install { background: var(--primary); color: #fff; border-color: var(--primary); display: none; }
+    .btn-logout { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: transparent; }
+
+    main { max-width: 720px; width: 100%; margin: 1rem auto; padding: 0 0.9rem; }
+
+    /* Halaman 1: Beranda Sambutan Personal */
+    .welcome-hero {
+      background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+      color: #ffffff; border-radius: 16px; padding: 1.35rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .welcome-time { font-size: 0.78rem; opacity: 0.88; font-weight: 500; }
+    .welcome-name { font-size: 1.35rem; font-weight: 700; margin-top: 0.15rem; }
+    .kdl-pill {
+      display: inline-block; margin-top: 0.65rem; font-size: 0.78rem; font-weight: 600;
+      background: rgba(255, 255, 255, 0.18); padding: 0.3rem 0.7rem; border-radius: 99px;
+    }
+    .welcome-desc { font-size: 0.82rem; opacity: 0.92; margin-top: 0.6rem; line-height: 1.45; }
+
+    .overview-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem;
+      margin-bottom: 1rem;
+    }
+    .ov-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 0.9rem 0.5rem; text-align: center; cursor: pointer;
+    }
+    .ov-card strong { display: block; font-size: 1.35rem; font-weight: 700; }
+    .ov-card span { display: block; font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
+
+    .alert-banner {
+      background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25);
+      color: var(--danger); border-radius: 12px; padding: 0.85rem 1rem;
+      margin-bottom: 1rem; font-size: 0.83rem; display: none;
+      justify-content: space-between; align-items: center; gap: 0.5rem; cursor: pointer;
+    }
+
+    .section-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 1rem; margin-bottom: 1rem;
+    }
+    .section-title { font-size: 0.88rem; font-weight: 700; margin-bottom: 0.65rem; }
+    .kdl-summary-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.55rem 0; border-bottom: 1px solid var(--border); font-size: 0.83rem;
+    }
+    .kdl-summary-row:last-child { border-bottom: none; }
+
+    /* Halaman 2: Daftar Peta */
+    .tab-strip {
+      display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.4rem;
+      margin-bottom: 0.75rem; scrollbar-width: none;
+    }
+    .tab-strip::-webkit-scrollbar { display: none; }
     .tab-btn {
-      padding: 6px 11px; border-radius: 8px; border: 1px solid var(--border);
-      background: #fff; font-size: 12px; font-weight: 600; color: var(--muted);
-      cursor: pointer; white-space: nowrap;
+      padding: 0.42rem 0.8rem; border-radius: 99px; border: 1px solid var(--border);
+      background: var(--card); color: var(--muted); font-size: 0.78rem; font-weight: 600;
+      white-space: nowrap; cursor: pointer;
     }
     .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-    .stats-bar {
-      display: flex; justify-content: space-between; font-size: 12px; color: var(--muted);
-      padding: 0 2px;
+    .search-row { display: flex; gap: 0.5rem; margin-bottom: 0.65rem; }
+    .search-row input, .search-row select {
+      padding: 0.55rem 0.75rem; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text); font-size: 0.85rem; min-width: 0;
+    }
+    .search-row input { flex: 1; }
+
+    .bulk-toolbar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 0.65rem; gap: 0.5rem;
     }
 
-    /* Territory List */
-    .territory-list { flex: 1; overflow-y: auto; }
-    .territory-item {
-      padding: 13px 16px; border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      cursor: pointer; transition: 0.15s;
+    .list-container {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden;
     }
-    .territory-item:hover { background: #f8fafc; }
-    .territory-item.selected { background: var(--primary-soft); border-left: 4px solid var(--primary); }
-
+    .list-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem 0.9rem; border-bottom: 1px solid var(--border);
+      cursor: pointer; gap: 0.65rem; transition: background 0.12s;
+    }
+    .list-item:last-child { border-bottom: none; }
+    .list-item:active, .list-item:hover { background: var(--hover); }
+    .list-item.is-due { border-left: 3.5px solid var(--danger); }
+    .bulk-check {
+      width: 18px; height: 18px; accent-color: var(--primary);
+      flex-shrink: 0; display: none; cursor: pointer;
+    }
+    .item-left { display: flex; align-items: center; gap: 0.6rem; min-width: 0; flex: 1; }
+    .item-num {
+      font-size: 0.75rem; font-weight: 700; color: var(--primary);
+      background: rgba(37, 99, 235, 0.1); padding: 0.25rem 0.45rem;
+      border-radius: 6px; flex-shrink: 0;
+    }
     .item-info { min-width: 0; flex: 1; }
     .item-title {
-      font-size: 14px; font-weight: 700; color: var(--text);
+      font-size: 0.9rem; font-weight: 600; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .item-sub {
+      font-size: 0.75rem; color: var(--muted); margin-top: 0.12rem;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      margin-bottom: 3px;
     }
-    .item-sub { font-size: 12px; color: var(--muted); }
-
-    .status-pill {
-      font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 8px;
-      white-space: nowrap; flex-shrink: 0;
+    .badge {
+      font-size: 0.7rem; font-weight: 700; padding: 0.22rem 0.5rem;
+      border-radius: 6px; flex-shrink: 0;
     }
-    .status-kosong { background: var(--success-soft); color: var(--success); border: 1px solid #bbf7d0; }
-    .status-dipinjam { background: var(--warning-soft); color: var(--warning); border: 1px solid #fde68a; }
+    .b-avail { background: rgba(16, 185, 129, 0.12); color: var(--success); }
+    .b-work { background: rgba(37, 99, 235, 0.12); color: var(--primary); }
+    .b-due { background: rgba(239, 68, 68, 0.14); color: var(--danger); }
 
-    /* Map & Detail Panel */
-    .map-area { flex: 1; position: relative; display: flex; flex-direction: column; }
-    #map { flex: 1; width: 100%; z-index: 1; }
-
-    .detail-drawer {
-      position: absolute; bottom: 20px; right: 20px; left: 20px; max-width: 440px; margin-left: auto;
-      background: var(--surface); border-radius: 14px; border: 1px solid var(--border);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.12); padding: 18px; z-index: 1000;
-      display: none;
+    /* Bilah Bulk Assign Melayang */
+    .bulk-action-bar {
+      position: fixed; bottom: 4.3rem; left: 50%; transform: translateX(-50%);
+      width: calc(100% - 1.5rem); max-width: 680px;
+      background: var(--card); border: 1.5px solid var(--primary);
+      border-radius: 14px; padding: 0.75rem 0.9rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+      display: none; align-items: center; justify-content: space-between;
+      gap: 0.5rem; z-index: 120; flex-wrap: wrap;
     }
-    .detail-drawer.open { display: block; }
-    .drawer-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
-    .drawer-title { font-size: 16px; font-weight: 700; }
-    .drawer-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .close-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--muted); }
+    .bulk-action-bar select {
+      padding: 0.45rem 0.65rem; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text); font-size: 0.82rem; font-weight: 600;
+    }
 
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    /* Bottom Navigation Bar (Ala Aplikasi Mobile) */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--card); border-top: 1px solid var(--border);
+      display: flex; justify-content: space-around; align-items: center;
+      padding: 0.5rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom));
+      z-index: 110;
+    }
+    .bnav-btn {
+      background: transparent; border: none; color: var(--muted);
+      display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
+      font-size: 0.72rem; font-weight: 600; cursor: pointer; flex: 1;
+    }
+    .bnav-btn span.icon { font-size: 1.15rem; }
+    .bnav-btn.active { color: var(--primary); }
 
-    @media (max-width: 768px) {
-      .workspace { flex-direction: column; }
-      .sidebar { width: 100%; height: 55%; border-right: none; border-bottom: 1px solid var(--border); }
-      .map-area { height: 45%; }
-      .detail-drawer { left: 10px; right: 10px; bottom: 10px; max-width: none; }
+    /* Modal Detail Peta Terkunci Anti-Geser */
+    .modal-backdrop {
+      position: fixed; inset: 0; width: 100vw; max-width: 100%; overflow-x: hidden;
+      background: rgba(15, 23, 42, 0.65);
+      display: none; align-items: flex-end; justify-content: center; z-index: 200;
+    }
+    .modal {
+      background: var(--card); width: 100%; max-width: 100%; max-height: 92vh;
+      overflow-y: auto; overflow-x: hidden; border-radius: 20px 20px 0 0; padding: 1.25rem;
+    }
+    @media (min-width: 640px) {
+      .modal-backdrop { align-items: center; padding: 1rem; }
+      .modal { border-radius: 16px; max-width: 620px; max-height: 88vh; }
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 0.85rem; gap: 0.5rem;
+    }
+    .modal-header > div { min-width: 0; flex: 1; }
+    .close-btn {
+      background: var(--bg); border: 1px solid var(--border); color: var(--text);
+      width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-weight: 700; flex-shrink: 0;
+    }
+    #mapContainer {
+      height: 210px; width: 100%; max-width: 100%; border-radius: 12px;
+      border: 1px solid var(--border); margin-bottom: 1rem; z-index: 1;
+    }
+
+    .field { margin-bottom: 0.85rem; max-width: 100%; }
+    .field label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--muted); margin-bottom: 0.3rem; }
+    .field input, .field select {
+      width: 100%; max-width: 100%; min-width: 0; padding: 0.65rem 0.8rem; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.9rem;
+    }
+    .admin-box {
+      background: rgba(37, 99, 235, 0.05); border: 1px dashed var(--primary);
+      border-radius: 12px; padding: 0.85rem; margin-bottom: 0.9rem; max-width: 100%;
+    }
+    .admin-box-title { font-size: 0.72rem; font-weight: 700; color: var(--primary); margin-bottom: 0.6rem; text-transform: uppercase; }
+    .auto-info {
+      font-size: 0.78rem; color: var(--muted); background: var(--bg);
+      padding: 0.55rem 0.75rem; border-radius: 8px; margin-bottom: 0.9rem;
+    }
+
+    .btn-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem; }
+    .btn {
+      width: 100%; padding: 0.7rem; border-radius: 10px; border: none;
+      font-weight: 600; font-size: 0.88rem; cursor: pointer;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-warning { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+    .btn-success { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+
+    .history-box h4 { font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--muted); }
+    .hist-item {
+      font-size: 0.8rem; padding: 0.55rem 0; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; gap: 0.5rem;
+    }
+    .hist-item:last-child { border-bottom: none; }
+
+    .member-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.65rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; gap: 0.5rem;
     }
   </style>
 </head>
 <body>
 
-  <!-- Header -->
-  <header>
-    <div class="brand">
-      <h1>Portal Peta Daerah</h1>
-      <span class="header-badge">KDL Tegal & Pemalang</span>
+  <nav class="top-nav">
+    <div class="brand">🗺️ Peta Daerah <span class="role-tag" id="roleBadge">Asisten Hamba Daerah</span></div>
+    <div class="nav-actions">
+      <button class="btn-sm btn-install" id="installPwaBtn">📲 Install</button>
+      <button class="btn-sm" id="themeToggle">🌙</button>
+      <button class="btn-sm btn-logout" id="logoutBtn">Keluar</button>
     </div>
-  </header>
+  </nav>
 
-  <!-- Main Workspace -->
-  <div class="workspace">
-    <aside class="sidebar">
-      <div class="controls">
-        <input type="text" id="search-input" class="form-control" placeholder="Cari nomor, nama daerah, atau pemegang..." />
-        <div class="kdl-tabs" id="kdl-tabs">
-          <button class="tab-btn active" data-kdl="ALL">Semua</button>
-          <button class="tab-btn" data-kdl="KDL Tegal Timur">KDL Tegal Timur</button>
-          <button class="tab-btn" data-kdl="KDL Tegal Barat">KDL Tegal Barat</button>
-          <button class="tab-btn" data-kdl="KDL Pemalang">KDL Pemalang</button>
+  <main>
+    <!-- HALAMAN 1: BERANDA SAMBUTAN PERSONAL -->
+    <section id="pageHome">
+      <div class="welcome-hero">
+        <div class="welcome-time" id="greetingTime">Selamat siang,</div>
+        <div class="welcome-name" id="greetingName">Memuat...</div>
+        <div class="kdl-pill" id="greetingKdl">📍 Wilayah Tugas: -</div>
+        <div class="welcome-desc" id="greetingTask">Memuat ringkasan tugas wilayah Anda...</div>
+      </div>
+
+      <div class="alert-banner" id="homeAuditAlert" onclick="goToTerritories('due')">
+        <span>⚠️ Ada <strong id="alertDueCount">0</strong> peta di wilayah Anda yang sudah masuk jadwal cek 4 bulan.</span>
+        <strong>Lihat →</strong>
+      </div>
+
+      <div class="overview-grid">
+        <div class="ov-card" onclick="goToTerritories('mine')">
+          <strong id="ovTotal">0</strong>
+          <span>Peta Wilayah</span>
         </div>
-        <div class="stats-bar">
-          <span id="count-shown">Menampilkan 0 peta</span>
-          <span id="count-available">Kosong: 0</span>
+        <div class="ov-card" onclick="goToTerritories('mine', 'work')">
+          <strong id="ovWork" style="color: var(--primary);">0</strong>
+          <span>Dikerjakan</span>
+        </div>
+        <div class="ov-card" onclick="goToTerritories('mine', 'avail')">
+          <strong id="ovAvail" style="color: var(--success);">0</strong>
+          <span>Tersedia</span>
         </div>
       </div>
-      <div class="territory-list" id="territory-list"></div>
-    </aside>
 
-    <main class="map-area">
-      <div id="map"></div>
-
-      <!-- Detail & Edit Drawer -->
-      <div class="detail-drawer" id="detail-drawer">
-        <div class="drawer-header">
-          <div>
-            <div class="drawer-title" id="drawer-title">Daerah -</div>
-            <div class="drawer-meta" id="drawer-meta">-</div>
-          </div>
-          <button class="close-btn" id="btn-close-drawer">&times;</button>
-        </div>
-
-        <div class="grid-2">
-          <div class="form-group">
-            <label>Nomor Daerah</label>
-            <input type="text" id="edit-nomor" class="form-control" />
-          </div>
-          <div class="form-group">
-            <label>Wilayah KDL</label>
-            <select id="edit-kdl" class="form-control">
-              <option value="KDL Tegal Timur">KDL Tegal Timur</option>
-              <option value="KDL Tegal Barat">KDL Tegal Barat</option>
-              <option value="KDL Pemalang">KDL Pemalang</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Nama Daerah / Landmark</label>
-          <input type="text" id="edit-nama" class="form-control" />
-        </div>
-
-        <div class="grid-2">
-          <div class="form-group">
-            <label>Status Peta</label>
-            <select id="edit-status" class="form-control">
-              <option value="Tersedia">Kosong (Tersedia)</option>
-              <option value="Dipinjam">Dipinjam</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Nama Pemegang</label>
-            <input type="text" id="edit-pemegang" class="form-control" placeholder="Kosongkan jika tersedia" />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Tanggal Mulai / Catatan</label>
-          <input type="text" id="edit-catatan" class="form-control" placeholder="Contoh: Mulai 13 Nov 2026" />
-        </div>
-
-        <button id="btn-save-territory" class="btn btn-primary btn-block">Simpan Perubahan</button>
+      <div class="section-card">
+        <div class="section-title">Sebaran Peta per KDL</div>
+        <div id="kdlBreakdown"></div>
       </div>
-    </main>
+
+      <button class="btn btn-primary" onclick="goToTerritories('mine')">🗺️ Kelola Peta Wilayah Saya →</button>
+    </section>
+
+    <!-- HALAMAN 2: DAFTAR PETA -->
+    <section id="pageTerritories" style="display: none;">
+      <div class="tab-strip">
+        <button class="tab-btn active" data-tab="mine">Wilayah Saya (<span id="cMine">0</span>)</button>
+        <button class="tab-btn" data-tab="all">Semua Peta (<span id="cAll">0</span>)</button>
+        <button class="tab-btn" data-tab="due">⚠️ Perlu Audit (<span id="cDue">0</span>)</button>
+      </div>
+
+      <div class="search-row">
+        <input type="text" id="searchInput" placeholder="Cari nomor, daerah, atau pemegang...">
+        <select id="kdlFilter">
+          <option value="">Semua KDL</option>
+          <option value="KDL Pemalang">KDL Pemalang</option>
+          <option value="KDL Tegal Timur">KDL Tegal Timur</option>
+          <option value="KDL Tegal Barat">KDL Tegal Barat</option>
+          <option value="UNASSIGNED">Belum Masuk KDL</option>
+        </select>
+      </div>
+
+      <!-- Toolbar Bulk Assign khusus Hamba Daerah -->
+      <div class="bulk-toolbar" id="adminBulkBar" style="display: none;">
+        <button class="btn-sm" id="toggleBulkBtn">☑️ Pilih Banyak (Bulk KDL)</button>
+        <button class="btn-sm" id="selectAllVisibleBtn" style="display: none;">Centang Semua Tampil</button>
+      </div>
+
+      <div class="list-container" id="territoryList">
+        <div style="padding: 1.5rem; text-align: center; color: var(--muted); font-size: 0.85rem;">Memuat daftar peta...</div>
+      </div>
+    </section>
+
+    <!-- HALAMAN 3: KELOLA ANGGOTA (KHUSUS HAMBA DAERAH) -->
+    <section id="pageMembers" style="display: none;">
+      <div class="section-card">
+        <h3 style="font-size: 1rem; margin-bottom: 0.25rem;">Anggota & Pembagian KDL</h3>
+        <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 1rem;">Daftarkan email Hamba Daerah & Asisten Hamba Daerah beserta KDL tugasnya.</p>
+
+        <div class="field">
+          <label>Nama Panggilan</label>
+          <input type="text" id="newMemberName" placeholder="Contoh: Budi">
+        </div>
+        <div class="field">
+          <label>Alamat Email Google</label>
+          <input type="email" id="newMemberEmail" placeholder="budi@gmail.com">
+        </div>
+        <div class="field">
+          <label>Peran / Jabatan</label>
+          <select id="newMemberRole">
+            <option value="asisten">Asisten Hamba Daerah</option>
+            <option value="hamba_daerah">Hamba Daerah (Admin Penuh)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>KDL yang Dikelola</label>
+          <select id="newMemberKdl">
+            <option value="Semua KDL">Semua KDL (Pemalang, Tegal Timur, Tegal Barat)</option>
+            <option value="KDL Pemalang">KDL Pemalang</option>
+            <option value="KDL Tegal Timur">KDL Tegal Timur</option>
+            <option value="KDL Tegal Barat">KDL Tegal Barat</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="addMemberBtn">+ Simpan Anggota</button>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">Daftar Anggota Terdaftar</div>
+        <div id="memberList"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bilah Aksi Bulk Assign Melayang -->
+  <div class="bulk-action-bar" id="bulkActionBar">
+    <span style="font-size: 0.82rem; font-weight: 700;"><span id="selectedCount">0</span> dipilih</span>
+    <div style="display: flex; gap: 0.4rem; align-items: center;">
+      <select id="bulkTargetKdl">
+        <option value="KDL Pemalang">KDL Pemalang</option>
+        <option value="KDL Tegal Timur">KDL Tegal Timur</option>
+        <option value="KDL Tegal Barat">KDL Tegal Barat</option>
+        <option value="">Kosongkan KDL</option>
+      </select>
+      <button class="btn-sm" style="background: var(--primary); color: #fff; border: none;" id="applyBulkBtn">Terapkan</button>
+    </div>
   </div>
+
+  <!-- Navigasi Bawah Mobile -->
+  <nav class="bottom-nav">
+    <button class="bnav-btn active" data-page="pageHome">
+      <span class="icon">🏠</span>
+      <span>Beranda</span>
+    </button>
+    <button class="bnav-btn" data-page="pageTerritories">
+      <span class="icon">🗺️</span>
+      <span>Daftar Peta</span>
+    </button>
+    <button class="bnav-btn" data-page="pageMembers" id="bnavMembers" style="display: none;">
+      <span class="icon">👥</span>
+      <span>Anggota</span>
+    </button>
+  </nav>
+
+  <!-- Modal Detail Peta -->
+  <div class="modal-backdrop" id="detailModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary);" id="mSubHeader">#001 • KDL Pemalang</div>
+          <h2 style="font-size: 1.15rem; margin-top: 0.1rem; word-wrap: break-word;" id="mNama">Nama Daerah</h2>
+        </div>
+        <button class="close-btn" id="closeModalBtn">✕</button>
+      </div>
+
+      <div id="mapContainer"></div>
+
+      <!-- Kotak Khusus Hamba Daerah (Admin) -->
+      <div class="admin-box" id="adminOnlyFields" style="display: none;">
+        <div class="admin-box-title">⚙️ Pengaturan Hamba Daerah</div>
+        <div class="field">
+          <label>Kelompok Dinas Lapangan (KDL)</label>
+          <select id="fKdl">
+            <option value="">-- Belum Diatur --</option>
+            <option value="KDL Pemalang">KDL Pemalang</option>
+            <option value="KDL Tegal Timur">KDL Tegal Timur</option>
+            <option value="KDL Tegal Barat">KDL Tegal Barat</option>
+          </select>
+        </div>
+        <div class="field" style="margin-bottom: 0;">
+          <label>Atribut / Kategori Peta</label>
+          <select id="fKategori">
+            <option value="Umum">Umum</option>
+            <option value="Perkotaan">Perkotaan</option>
+            <option value="Daerah Kelompok">Daerah Kelompok</option>
+            <option value="Bisnis">Bisnis</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Form Simpel untuk Asisten Hamba Daerah (Cuma 3 Field!) -->
+      <div class="field">
+        <label>Siapa yang mengerjakan</label>
+        <input type="text" id="fPemegang" placeholder="Kosongkan jika belum ada">
+      </div>
+      <div class="field">
+        <label>Tanggal mulai dikerjakan</label>
+        <input type="date" id="fTglMulai">
+      </div>
+      <div class="field">
+        <label>Catatan</label>
+        <input type="text" id="fCatatan" placeholder="Catatan singkat (opsional)">
+      </div>
+
+      <div class="auto-info" id="autoAuditInfo">
+        📅 Jadwal cek 4 bulan akan otomatis dihitung setelah tanggal mulai diisi.
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" id="saveBtn">💾 Simpan</button>
+        <button class="btn btn-warning" id="auditContinueBtn" style="display:none;">🔄 Audit 4 Bulan: Lanjut (+4 Bln)</button>
+        <button class="btn btn-success" id="finishBtn" style="display:none;">✅ Selesai & Dikembalikan</button>
+      </div>
+
+      <div class="history-box">
+        <h4>Riwayat Pengerjaan Sebelumnya</h4>
+        <div id="historyList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    }
+    let deferredPrompt;
+    const installBtn = document.getElementById("installPwaBtn");
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = "inline-block";
+    });
+    installBtn.addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBtn.style.display = "none";
+    });
+  </script>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import { getDatabase, ref, onValue, update, push, set, remove, get } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
-    // =========================================================================
-    // GANTI DENGAN KONFIGURASI FIREBASE PROJECT KAMU
-    // =========================================================================
     const firebaseConfig = {
       apiKey: "AIzaSyCzX0UOkVwvRkUuGBWVcec92AWj2tjQeoE",
       authDomain: "territory-assistant-40a9b.firebaseapp.com",
@@ -231,154 +515,481 @@
       appId: "1:729411479743:web:bc19a775993ff6bf897e0a"
     };
 
+    const SUPER_ADMIN = "edenpemalang@gmail.com";
     const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    const auth = getAuth(app);
+    const db = getDatabase(app, "https://territory-assistant-40a9b-default-rtdb.asia-southeast1.firebasedatabase.app");
 
+    let currentUser = null;
+    let currentProfile = { name: "Eden", role: "hamba_daerah", kdl: "Semua KDL" };
+    let isHambaDaerah = false;
     let allTerritories = {};
-    let activeKdl = "ALL";
-    let searchQuery = "";
+    let allMembers = {};
+    let activeTab = "mine";
+    let statusQuickFilter = "";
     let selectedId = null;
+    let bulkMode = false;
+    let selectedBulkIds = new Set();
+    let map = null;
+    let currentPolygon = null;
 
-    // Inisialisasi Peta Leaflet
-    const map = L.map("map").setView([-6.868, 109.136], 13);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "&copy; OpenStreetMap"
-    }).addTo(map);
-    const polygonLayerGroup = L.layerGroup().addTo(map);
+    function emailToKey(email) {
+      return email.toLowerCase().trim().replace(/\./g, ",");
+    }
 
-    // Listen Data Territories dari Firebase
-    onValue(ref(db, "territories"), (snapshot) => {
-      allTerritories = snapshot.val() || {};
-      renderTerritories();
+    function getTimeGreeting() {
+      const h = new Date().getHours();
+      if (h < 11) return "Selamat pagi,";
+      if (h < 15) return "Selamat siang,";
+      if (h < 18) return "Selamat sore,";
+      return "Selamat malam,";
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+      currentUser = user;
+      const userEmail = user.email.toLowerCase();
+      const userKey = emailToKey(userEmail);
+
+      const snap = await get(ref(db, `users/${userKey}`));
+      if (!snap.exists()) {
+        if (userEmail === SUPER_ADMIN) {
+          currentProfile = { email: userEmail, name: "Eden", role: "hamba_daerah", kdl: "Semua KDL" };
+          await set(ref(db, `users/${userKey}`), currentProfile);
+        } else {
+          alert("Maaf, email Anda (" + user.email + ") belum terdaftar. Hubungi Hamba Daerah.");
+          await signOut(auth);
+          window.location.href = "index.html";
+          return;
+        }
+      } else {
+        currentProfile = snap.val();
+      }
+
+      isHambaDaerah = (userEmail === SUPER_ADMIN || currentProfile.role === "hamba_daerah");
+
+      document.body.style.display = "flex";
+      document.getElementById("roleBadge").textContent = isHambaDaerah ? "Hamba Daerah" : "Asisten HD";
+      document.getElementById("greetingTime").textContent = getTimeGreeting();
+      document.getElementById("greetingName").textContent = `${currentProfile.name || user.email.split("@")[0]}! 👋`;
+      document.getElementById("greetingKdl").textContent = `📍 Tugas: ${currentProfile.kdl || "Semua KDL"}`;
+      document.getElementById("greetingTask").textContent = isHambaDaerah
+        ? "Sebagai Hamba Daerah, Anda memantau pembagian peta dan siklus audit 4 bulanan di seluruh KDL."
+        : `Tugas Anda membantu memantau pembagian peta lapangan dan pengecekan 4 bulanan di wilayah ${currentProfile.kdl}.`;
+
+      if (isHambaDaerah) {
+        document.getElementById("bnavMembers").style.display = "flex";
+        document.getElementById("adminOnlyFields").style.display = "block";
+        document.getElementById("adminBulkBar").style.display = "flex";
+      }
+
+      listenMembers();
+      listenTerritories();
     });
 
-    // Render & Pengurutan Numerik Asli (1, 2, 3, ..., 10, ..., 100)
-    function renderTerritories() {
-      const listEl = document.getElementById("territory-list");
-      const q = searchQuery.toLowerCase();
+    function isMyTerritory(t) {
+      if (isHambaDaerah || currentProfile.kdl === "Semua KDL") return true;
+      return (t.kdl || "") === currentProfile.kdl;
+    }
 
-      const filtered = Object.entries(allTerritories)
-        .map(([key, val]) => ({ ...val, _key: key }))
-        .filter((t) => {
-          if (activeKdl !== "ALL" && t.kdl !== activeKdl) return false;
-          if (!q) return true;
-          const judulLengkap = `daerah ${t.nomor} - ${t.nama}`.toLowerCase();
-          const pemegang = (t.pemegang || "").toLowerCase();
-          return judulLengkap.includes(q) || pemegang.includes(q) || String(t.nomor) === q;
-        })
-        .sort((a, b) => (parseInt(a.nomor, 10) || 0) - (parseInt(b.nomor, 10) || 0));
+    function addFourMonths(dateStr) {
+      if (!dateStr) return "";
+      const d = new Date(dateStr);
+      d.setMonth(d.getMonth() + 4);
+      return d.toISOString().split("T")[0];
+    }
 
-      const tersediaCount = filtered.filter((t) => t.status !== "Dipinjam").length;
-      document.getElementById("count-shown").textContent = `Menampilkan ${filtered.length} peta`;
-      document.getElementById("count-available").textContent = `Kosong: ${tersediaCount}`;
+    function isAuditDue(t) {
+      if (!t.pemegang || !t.jatuh_tempo_audit) return false;
+      const today = new Date().toISOString().split("T")[0];
+      return t.jatuh_tempo_audit <= today;
+    }
 
-      listEl.innerHTML = "";
-      polygonLayerGroup.clearLayers();
-
-      filtered.forEach((t) => {
-        const isDipinjam = t.status === "Dipinjam";
-        const judulFormat = `Daerah ${t.nomor} - ${t.nama}`;
-
-        const itemDiv = document.createElement("div");
-        itemDiv.className = `territory-item ${t._key === selectedId ? "selected" : ""}`;
-        itemDiv.innerHTML = `
-          <div class="item-info">
-            <div class="item-title" title="${judulFormat}">${judulFormat}</div>
-            <div class="item-sub">${t.kdl || "Tanpa KDL"} • ${isDipinjam && t.pemegang ? `Pemegang: ${t.pemegang}` : (t.kategori || "Umum")}</div>
-          </div>
-          <span class="status-pill ${isDipinjam ? "status-dipinjam" : "status-kosong"}">
-            ${isDipinjam ? "Dipinjam" : "Kosong"}
-          </span>
-        `;
-        itemDiv.addEventListener("click", () => selectTerritory(t._key));
-        listEl.appendChild(itemDiv);
-
-        if (Array.isArray(t.koordinat) && t.koordinat.length > 0) {
-          const isSelected = t._key === selectedId;
-          const poly = L.polygon(t.koordinat, {
-            color: isSelected ? "#2563eb" : (isDipinjam ? "#d97706" : "#16a34a"),
-            weight: isSelected ? 3 : 1.5,
-            fillOpacity: isSelected ? 0.35 : 0.15
-          }).addTo(polygonLayerGroup);
-
-          poly.bindTooltip(judulFormat, { sticky: true });
-          poly.on("click", () => selectTerritory(t._key));
-        }
+    function listenMembers() {
+      onValue(ref(db, "users"), (snap) => {
+        allMembers = snap.val() || {};
+        renderMembers();
       });
     }
 
-    // Pilih Peta & Buka Panel Detail
-    function selectTerritory(key) {
-      selectedId = key;
-      const t = allTerritories[key];
+    function renderMembers() {
+      const listEl = document.getElementById("memberList");
+      const membersArr = Object.values(allMembers);
+
+      listEl.innerHTML = membersArr.map(m => {
+        const roleLabel = m.role === "hamba_daerah" ? "Hamba Daerah" : "Asisten Hamba Daerah";
+        return `
+          <div class="member-row">
+            <div style="min-width:0; flex:1;">
+              <strong>${m.name || m.email}</strong> <span class="role-tag">${roleLabel}</span>
+              <div style="font-size:0.76rem; color:var(--primary); font-weight:600; margin-top:0.15rem;">📍 ${m.kdl || 'Semua KDL'}</div>
+              <div style="font-size:0.73rem; color:var(--muted); overflow:hidden; text-overflow:ellipsis;">${m.email}</div>
+            </div>
+            ${m.email !== SUPER_ADMIN ? `<button class="btn-sm btn-logout" onclick="removeMember('${m.email}')">Hapus</button>` : '<span style="font-size:0.72rem; color:var(--muted);">Utama</span>'}
+          </div>
+        `;
+      }).join("");
+    }
+
+    document.getElementById("addMemberBtn").addEventListener("click", async () => {
+      const email = document.getElementById("newMemberEmail").value.trim().toLowerCase();
+      const name = document.getElementById("newMemberName").value.trim();
+      const role = document.getElementById("newMemberRole").value;
+      const kdl = document.getElementById("newMemberKdl").value;
+      if (!email) return alert("Masukkan alamat email anggota.");
+
+      await set(ref(db, `users/${emailToKey(email)}`), { email, name: name || email.split("@")[0], role, kdl });
+      document.getElementById("newMemberEmail").value = "";
+      document.getElementById("newMemberName").value = "";
+      alert("Anggota berhasil disimpan!");
+    });
+
+    window.removeMember = async function(email) {
+      if (!confirm(`Hapus akses untuk ${email}?`)) return;
+      await remove(ref(db, `users/${emailToKey(email)}`));
+    };
+
+    function listenTerritories() {
+      onValue(ref(db, "territories"), (snap) => {
+        allTerritories = snap.val() || {};
+        renderHomeOverview();
+        renderList();
+      });
+    }
+
+    function renderHomeOverview() {
+      const list = Object.values(allTerritories);
+      const mineList = list.filter(t => isMyTerritory(t));
+      const workingCount = mineList.filter(t => t.pemegang && t.pemegang.trim() !== "").length;
+      const availCount = mineList.length - workingCount;
+      const dueCount = mineList.filter(t => isAuditDue(t)).length;
+
+      document.getElementById("ovTotal").textContent = mineList.length;
+      document.getElementById("ovWork").textContent = workingCount;
+      document.getElementById("ovAvail").textContent = availCount;
+
+      const alertEl = document.getElementById("homeAuditAlert");
+      if (dueCount > 0) {
+        alertEl.style.display = "flex";
+        document.getElementById("alertDueCount").textContent = dueCount;
+      } else {
+        alertEl.style.display = "none";
+      }
+
+      const kdls = ["KDL Pemalang", "KDL Tegal Timur", "KDL Tegal Barat"];
+      const unassigned = list.filter(t => !t.kdl).length;
+      let html = kdls.map(k => {
+        const sub = list.filter(t => t.kdl === k);
+        const active = sub.filter(t => t.pemegang && t.pemegang.trim() !== "").length;
+        return `<div class="kdl-summary-row"><span><strong>${k}</strong></span><span style="color:var(--muted);">${active} aktif / ${sub.length} peta</span></div>`;
+      }).join("");
+      if (unassigned > 0) {
+        html += `<div class="kdl-summary-row"><span style="color:var(--warning);">Belum masuk KDL</span><span style="color:var(--muted);">${unassigned} peta</span></div>`;
+      }
+      document.getElementById("kdlBreakdown").innerHTML = html;
+    }
+
+    function getVisibleTerritories() {
+      const list = Object.values(allTerritories);
+      const search = document.getElementById("searchInput").value.toLowerCase();
+      const kdlFilter = document.getElementById("kdlFilter").value;
+
+      let source = list;
+      if (activeTab === "mine") source = list.filter(t => isMyTerritory(t));
+      if (activeTab === "due") source = list.filter(t => isAuditDue(t) && isMyTerritory(t));
+
+      return source.filter(t => {
+        const isWorking = t.pemegang && t.pemegang.trim() !== "";
+        if (statusQuickFilter === "avail" && isWorking) return false;
+        if (statusQuickFilter === "work" && !isWorking) return false;
+        if (kdlFilter === "UNASSIGNED" && t.kdl) return false;
+        if (kdlFilter && kdlFilter !== "UNASSIGNED" && t.kdl !== kdlFilter) return false;
+        if (search) {
+          const hay = `${t.nomor} ${t.nama} ${t.pemegang} ${t.kdl || ''}`.toLowerCase();
+          if (!hay.includes(search)) return false;
+        }
+        return true;
+      });
+    }
+
+    function renderList() {
+      const list = Object.values(allTerritories);
+      const mineList = list.filter(t => isMyTerritory(t));
+      const dueList = mineList.filter(t => isAuditDue(t));
+
+      document.getElementById("cMine").textContent = mineList.length;
+      document.getElementById("cAll").textContent = list.length;
+      document.getElementById("cDue").textContent = dueList.length;
+
+      const filtered = getVisibleTerritories();
+      const container = document.getElementById("territoryList");
+      if (filtered.length === 0) {
+        container.innerHTML = `<div style="padding: 1.5rem; text-align: center; color: var(--muted); font-size: 0.85rem;">Tidak ada peta di daftar ini.</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(t => {
+        const due = isAuditDue(t);
+        const isWorking = t.pemegang && t.pemegang.trim() !== "";
+        let badge = `<span class="badge b-avail">Kosong</span>`;
+        if (due) badge = `<span class="badge b-due">Audit!</span>`;
+        else if (isWorking) badge = `<span class="badge b-work">Aktif</span>`;
+
+        const kdlLabel = t.kdl || "Belum diatur KDL";
+        const subText = isWorking
+          ? `👤 ${t.pemegang} • ${kdlLabel}`
+          : `${kdlLabel} • ${t.kategori || 'Umum'}`;
+
+        const checked = selectedBulkIds.has(t.id) ? "checked" : "";
+
+        return `
+          <div class="list-item ${due ? 'is-due' : ''}" onclick="handleItemClick('${t.id}')">
+            <input type="checkbox" class="bulk-check" style="display:${bulkMode ? 'block' : 'none'};" ${checked} onclick="event.stopPropagation(); toggleBulkItem('${t.id}')">
+            <div class="item-left">
+              <span class="item-num">#${t.nomor}</span>
+              <div class="item-info">
+                <div class="item-title">${t.nama}</div>
+                <div class="item-sub">${subText}</div>
+              </div>
+            </div>
+            ${badge}
+          </div>
+        `;
+      }).join("");
+    }
+
+    window.handleItemClick = function(id) {
+      if (bulkMode) {
+        toggleBulkItem(id);
+        renderList();
+      } else {
+        openDetail(id);
+      }
+    };
+
+    window.toggleBulkItem = function(id) {
+      if (selectedBulkIds.has(id)) selectedBulkIds.delete(id);
+      else selectedBulkIds.add(id);
+      document.getElementById("selectedCount").textContent = selectedBulkIds.size;
+      document.getElementById("bulkActionBar").style.display = selectedBulkIds.size > 0 ? "flex" : "none";
+    };
+
+    document.getElementById("toggleBulkBtn").addEventListener("click", () => {
+      bulkMode = !bulkMode;
+      selectedBulkIds.clear();
+      document.getElementById("toggleBulkBtn").textContent = bulkMode ? "✕ Batal Pilih Banyak" : "☑️ Pilih Banyak (Bulk KDL)";
+      document.getElementById("selectAllVisibleBtn").style.display = bulkMode ? "inline-block" : "none";
+      document.getElementById("bulkActionBar").style.display = "none";
+      renderList();
+    });
+
+    document.getElementById("selectAllVisibleBtn").addEventListener("click", () => {
+      const visible = getVisibleTerritories();
+      visible.forEach(t => selectedBulkIds.add(t.id));
+      document.getElementById("selectedCount").textContent = selectedBulkIds.size;
+      document.getElementById("bulkActionBar").style.display = selectedBulkIds.size > 0 ? "flex" : "none";
+      renderList();
+    });
+
+    document.getElementById("applyBulkBtn").addEventListener("click", async () => {
+      if (selectedBulkIds.size === 0) return;
+      const targetKdl = document.getElementById("bulkTargetKdl").value;
+      const updates = {};
+      selectedBulkIds.forEach(id => {
+        updates[`territories/${id}/kdl`] = targetKdl;
+      });
+      await update(ref(db), updates);
+      alert(`${selectedBulkIds.size} peta berhasil dipindahkan ke ${targetKdl || 'Belum Diatur'}!`);
+      bulkMode = false;
+      selectedBulkIds.clear();
+      document.getElementById("toggleBulkBtn").textContent = "☑️ Pilih Banyak (Bulk KDL)";
+      document.getElementById("selectAllVisibleBtn").style.display = "none";
+      document.getElementById("bulkActionBar").style.display = "none";
+      renderList();
+    });
+
+    window.switchPage = function(pageId) {
+      ["pageHome", "pageTerritories", "pageMembers"].forEach(p => {
+        document.getElementById(p).style.display = p === pageId ? "block" : "none";
+      });
+      document.querySelectorAll(".bnav-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.page === pageId);
+      });
+      if (pageId !== "pageTerritories") {
+        document.getElementById("bulkActionBar").style.display = "none";
+      }
+    };
+
+    window.goToTerritories = function(tab, statusFilter = "") {
+      activeTab = tab;
+      statusQuickFilter = statusFilter;
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+      switchPage("pageTerritories");
+      renderList();
+    };
+
+    document.querySelectorAll(".bnav-btn").forEach(btn => {
+      btn.addEventListener("click", () => switchPage(btn.dataset.page));
+    });
+
+    function closeModal() {
+      document.getElementById("detailModal").style.display = "none";
+      document.body.style.overflow = "";
+    }
+
+    window.openDetail = function(id) {
+      selectedId = id;
+      const t = allTerritories[id];
       if (!t) return;
 
-      renderTerritories();
-
-      const judulFormat = `Daerah ${t.nomor} - ${t.nama}`;
-      document.getElementById("drawer-title").textContent = judulFormat;
-      document.getElementById("drawer-meta").textContent = `${t.kdl || "-"} • Status: ${t.status || "Tersedia"}`;
-
-      document.getElementById("edit-nomor").value = t.nomor || "";
-      document.getElementById("edit-nama").value = t.nama || "";
-      document.getElementById("edit-kdl").value = t.kdl || "KDL Tegal Timur";
-      document.getElementById("edit-status").value = t.status === "Dipinjam" ? "Dipinjam" : "Tersedia";
-      document.getElementById("edit-pemegang").value = t.pemegang || "";
-      document.getElementById("edit-catatan").value = t.catatan || "";
-
-      document.getElementById("detail-drawer").classList.add("open");
-
-      if (Array.isArray(t.koordinat) && t.koordinat.length > 0) {
-        const bounds = L.latLngBounds(t.koordinat);
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 17 });
+      document.getElementById("mSubHeader").textContent = `PETA #${t.nomor} • ${t.kdl || 'Belum diatur KDL'} • ${t.kategori || 'Umum'}`;
+      document.getElementById("mNama").textContent = t.nama;
+      if (isHambaDaerah) {
+        document.getElementById("fKdl").value = t.kdl || "";
+        document.getElementById("fKategori").value = t.kategori || "Umum";
       }
+
+      document.getElementById("fPemegang").value = t.pemegang || "";
+      document.getElementById("fTglMulai").value = t.tanggal_mulai || "";
+      document.getElementById("fCatatan").value = t.catatan || "";
+
+      const hasHolder = t.pemegang && t.pemegang.trim() !== "";
+      document.getElementById("auditContinueBtn").style.display = hasHolder ? "block" : "none";
+      document.getElementById("finishBtn").style.display = hasHolder ? "block" : "none";
+
+      updateAutoAuditText(t.tanggal_mulai, t.jatuh_tempo_audit);
+
+      const histEl = document.getElementById("historyList");
+      const riwayatArr = t.riwayat ? Object.values(t.riwayat).reverse() : [];
+      histEl.innerHTML = riwayatArr.length === 0
+        ? `<div style="font-size:0.8rem; color:var(--muted);">Belum ada riwayat sebelumnya.</div>`
+        : riwayatArr.map(r => `
+            <div class="hist-item">
+              <div><strong>${r.pemegang}</strong><div style="color:var(--muted); font-size:0.74rem;">${r.keterangan || ''}</div></div>
+              <div style="text-align:right; font-size:0.74rem; color:var(--muted);">${r.tanggal_mulai || '-'}<br>s/d ${r.tanggal_kembali || '-'}</div>
+            </div>
+          `).join("");
+
+      document.getElementById("detailModal").style.display = "flex";
+      document.body.style.overflow = "hidden";
+
+      setTimeout(() => {
+        if (!map) {
+          map = L.map("mapContainer").setView([-6.89, 109.38], 13);
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OSM" }).addTo(map);
+        }
+        map.invalidateSize();
+        if (currentPolygon) map.removeLayer(currentPolygon);
+        if (t.koordinat && t.koordinat.length > 0) {
+          currentPolygon = L.polygon(t.koordinat, { color: "#2563eb", fillOpacity: 0.25 }).addTo(map);
+          map.fitBounds(currentPolygon.getBounds());
+        }
+      }, 150);
+    };
+
+    function updateAutoAuditText(tglMulai, existingDue) {
+      const infoEl = document.getElementById("autoAuditInfo");
+      if (!tglMulai) {
+        infoEl.textContent = "📅 Jadwal cek 4 bulan akan otomatis dihitung setelah tanggal mulai diisi.";
+        return;
+      }
+      const target = existingDue || addFourMonths(tglMulai);
+      infoEl.innerHTML = `📅 Jadwal audit 4 bulan otomatis: <strong>${target}</strong>`;
     }
 
-    // Simpan Perubahan ke Firebase
-    document.getElementById("btn-save-territory").addEventListener("click", async () => {
+    document.getElementById("fTglMulai").addEventListener("change", (e) => {
+      updateAutoAuditText(e.target.value, "");
+    });
+
+    document.getElementById("saveBtn").addEventListener("click", async () => {
       if (!selectedId) return;
-      const nomorInput = document.getElementById("edit-nomor").value.trim();
-      const nomorBaru = nomorInput.isdigit ? String(parseInt(nomorInput, 10)) : (String(parseInt(nomorInput, 10) || nomorInput));
-      const namaBaru = document.getElementById("edit-nama").value.trim();
-      const kdlBaru = document.getElementById("edit-kdl").value;
-      const statusBaru = document.getElementById("edit-status").value;
-      const pemegangBaru = statusBaru === "Tersedia" ? "" : document.getElementById("edit-pemegang").value.trim();
-      const catatanBaru = document.getElementById("edit-catatan").value.trim();
+      const t = allTerritories[selectedId];
+      const pemegang = document.getElementById("fPemegang").value.trim();
+      const tglMulai = document.getElementById("fTglMulai").value;
+      let jatuhTempo = "";
+      if (pemegang && tglMulai) {
+        jatuhTempo = (tglMulai === t.tanggal_mulai && t.jatuh_tempo_audit) ? t.jatuh_tempo_audit : addFourMonths(tglMulai);
+      }
 
+      const payload = {
+        pemegang,
+        status: pemegang ? "Sedang Dikerjakan" : "Tersedia",
+        tanggal_mulai: tglMulai,
+        jatuh_tempo_audit: jatuhTempo,
+        catatan: document.getElementById("fCatatan").value.trim()
+      };
+
+      if (isHambaDaerah) {
+        payload.kdl = document.getElementById("fKdl").value;
+        payload.kategori = document.getElementById("fKategori").value;
+      }
+
+      await update(ref(db, `territories/${selectedId}`), payload);
+      closeModal();
+    });
+
+    document.getElementById("auditContinueBtn").addEventListener("click", async () => {
+      if (!selectedId) return;
+      const pemegang = document.getElementById("fPemegang").value.trim();
+      if (!pemegang) return;
+      const today = new Date().toISOString().split("T")[0];
+      const nextDue = addFourMonths(today);
+
+      await push(ref(db, `territories/${selectedId}/riwayat`), {
+        pemegang,
+        tanggal_mulai: document.getElementById("fTglMulai").value || today,
+        keterangan: `Audit 4 Bln (${today}): Lanjut`,
+        tanggal_kembali: "Masih berjalan"
+      });
+      await update(ref(db, `territories/${selectedId}`), { jatuh_tempo_audit: nextDue });
+      openDetail(selectedId);
+    });
+
+    document.getElementById("finishBtn").addEventListener("click", async () => {
+      if (!selectedId) return;
+      const pemegang = document.getElementById("fPemegang").value.trim();
+      if (!pemegang) return;
+      const today = new Date().toISOString().split("T")[0];
+
+      await push(ref(db, `territories/${selectedId}/riwayat`), {
+        pemegang,
+        tanggal_mulai: document.getElementById("fTglMulai").value || today,
+        keterangan: "Selesai & Dikembalikan",
+        tanggal_kembali: today
+      });
       await update(ref(db, `territories/${selectedId}`), {
-        nomor: nomorBaru,
-        nama: namaBaru,
-        kdl: kdlBaru,
-        status: statusBaru,
-        pemegang: pemegangBaru,
-        catatan: catatanBaru
+        pemegang: "", status: "Tersedia", tanggal_mulai: "", jatuh_tempo_audit: "", catatan: ""
       });
-
-      document.getElementById("drawer-title").textContent = `Daerah ${nomorBaru} - ${namaBaru}`;
-      document.getElementById("drawer-meta").textContent = `${kdlBaru} • Status: ${statusBaru}`;
-      alert("Perubahan peta berhasil disimpan!");
+      openDetail(selectedId);
     });
 
-    // Event Filter Tab & Pencarian
-    document.querySelectorAll(".tab-btn").forEach((btn) => {
+    document.querySelectorAll(".tab-btn").forEach(btn => {
       btn.addEventListener("click", () => {
-        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
-        activeKdl = btn.dataset.kdl;
-        renderTerritories();
+        activeTab = btn.dataset.tab;
+        statusQuickFilter = "";
+        renderList();
       });
     });
 
-    document.getElementById("search-input").addEventListener("input", (e) => {
-      searchQuery = e.target.value;
-      renderTerritories();
-    });
+    document.getElementById("closeModalBtn").addEventListener("click", closeModal);
+    document.getElementById("searchInput").addEventListener("input", renderList);
+    document.getElementById("kdlFilter").addEventListener("change", renderList);
+    document.getElementById("logoutBtn").addEventListener("click", async () => { await signOut(auth); window.location.href = "index.html"; });
 
-    document.getElementById("btn-close-drawer").addEventListener("click", () => {
-      document.getElementById("detail-drawer").classList.remove("open");
-      selectedId = null;
-      renderTerritories();
+    const themeToggle = document.getElementById("themeToggle");
+    const savedTheme = localStorage.getItem("theme") || "light";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    themeToggle.textContent = savedTheme === "dark" ? "☀️" : "🌙";
+    themeToggle.addEventListener("click", () => {
+      const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      localStorage.setItem("theme", next);
+      themeToggle.textContent = next === "dark" ? "☀️" : "🌙";
     });
   </script>
 </body>
