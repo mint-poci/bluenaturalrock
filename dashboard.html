@@ -3,10 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard</title>
+  <title>Portal Koordinator Peta</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Leaflet CSS untuk Peta Interaktif -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     :root {
       --bg: #f8fafc;
@@ -14,6 +16,10 @@
       --text: #0f172a;
       --muted: #64748b;
       --border: #e2e8f0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #10b981;
+      --warning: #f59e0b;
       --danger: #ef4444;
     }
     [data-theme="dark"] {
@@ -22,156 +28,645 @@
       --text: #f8fafc;
       --muted: #94a3b8;
       --border: #334155;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
     body {
       background-color: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      display: none; /* Disembunyikan sampai status login terverifikasi */
+      display: none;
       flex-direction: column;
     }
     nav {
       background: var(--card);
       border-bottom: 1px solid var(--border);
-      padding: 1rem 2rem;
+      padding: 0.9rem 1.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .nav-actions { display: flex; gap: 0.75rem; align-items: center; }
-    .btn-icon {
-      background: transparent;
+    .brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 700; font-size: 1.05rem; }
+    .nav-right { display: flex; align-items: center; gap: 0.75rem; }
+    .user-pill {
+      font-size: 0.8rem;
+      background: var(--bg);
       border: 1px solid var(--border);
-      color: var(--text);
-      padding: 0.45rem 0.7rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 99px;
+      color: var(--muted);
+    }
+    .btn-icon, .btn-logout {
       border-radius: 8px;
       cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 0.45rem 0.8rem;
     }
-    .btn-logout {
-      background: var(--danger);
-      color: #fff;
-      border: none;
-      padding: 0.5rem 1rem;
+    .btn-icon { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-logout { background: var(--danger); color: #fff; border: none; }
+
+    main { max-width: 1100px; width: 100%; margin: 1.5rem auto; padding: 0 1.25rem; }
+
+    /* Statistik Ringkas */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+    }
+    .stat-card span { font-size: 0.8rem; color: var(--muted); display: block; }
+    .stat-card strong { font-size: 1.5rem; margin-top: 0.25rem; display: block; }
+
+    /* Tabs & Filter */
+    .controls-bar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .tab-btn {
+      padding: 0.5rem 0.9rem;
       border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.85rem;
       font-weight: 600;
       cursor: pointer;
     }
-    main {
-      max-width: 800px;
-      width: 100%;
-      margin: 2.5rem auto;
-      padding: 0 1.5rem;
+    .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; flex: 1; justify-content: flex-end; }
+    .filters input, .filters select {
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.85rem;
     }
-    .welcome-card {
+
+    /* Grid Kartu Peta */
+    .territory-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .t-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.15rem;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+    .t-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+    .t-card.due-warning { border-left: 4px solid var(--danger); }
+    .t-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
+    .t-num { font-size: 0.75rem; font-weight: 700; color: var(--primary); }
+    .t-title { font-size: 1rem; font-weight: 700; margin-top: 0.15rem; }
+    .badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .badge-avail { background: rgba(16, 185, 129, 0.12); color: var(--success); }
+    .badge-work { background: rgba(37, 99, 235, 0.12); color: var(--primary); }
+    .badge-due { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+    .t-meta { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+    .t-footer {
+      border-top: 1px solid var(--border);
+      padding-top: 0.6rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Modal Detail Peta */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 200;
+    }
+    .modal {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 2rem;
-      display: flex;
-      align-items: center;
-      gap: 1.25rem;
+      width: 100%;
+      max-width: 820px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 1.5rem;
     }
-    .avatar {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      object-fit: cover;
-      background: #2563eb;
-      color: #fff;
+    .modal-header {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      justify-content: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .close-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
       font-weight: 700;
-      font-size: 1.5rem;
     }
-    .info h2 { font-size: 1.25rem; margin-bottom: 0.25rem; }
-    .info p { color: var(--muted); font-size: 0.9rem; }
-    .badge {
-      display: inline-block;
-      margin-top: 0.5rem;
-      font-size: 0.75rem;
-      background: rgba(37, 99, 235, 0.1);
-      color: #3b82f6;
-      padding: 0.25rem 0.6rem;
-      border-radius: 6px;
+    #mapContainer {
+      height: 260px;
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      margin-bottom: 1.25rem;
+      z-index: 1;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.9rem;
+      margin-bottom: 1rem;
+    }
+    .field label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.3rem; color: var(--muted); }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.88rem;
+    }
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin: 1rem 0 1.5rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .btn {
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      border: none;
       font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
     }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-warning { background: var(--warning); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+
+    /* Tabel Riwayat Lapis 2 */
+    .history-section h3 { font-size: 0.95rem; margin-bottom: 0.6rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th, td {
+      text-align: left;
+      padding: 0.6rem;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--muted); font-weight: 600; }
   </style>
 </head>
 <body>
 
   <nav>
-    <strong>Portal Member</strong>
-    <div class="nav-actions">
+    <div class="brand">🗺️ Portal Peta Daerah</div>
+    <div class="nav-right">
+      <span class="user-pill" id="userEmailDisplay">Memuat...</span>
       <button class="btn-icon" id="themeToggle">🌙</button>
       <button class="btn-logout" id="logoutBtn">Keluar</button>
     </div>
   </nav>
 
   <main>
-    <div class="welcome-card">
-      <div id="avatarContainer" class="avatar">U</div>
-      <div class="info">
-        <h2 id="userName">Memuat profil...</h2>
-        <p id="userEmail">email@domain.com</p>
-        <span class="badge" id="userUid">UID: -</span>
+    <!-- Statistik Ringkas -->
+    <div class="stats-grid">
+      <div class="stat-card"><span>Total Semua Peta</span><strong id="statTotal">0</strong></div>
+      <div class="stat-card"><span>Di-assign ke Saya</span><strong id="statMine">0</strong></div>
+      <div class="stat-card"><span>Sedang Dikerjakan</span><strong id="statActive">0</strong></div>
+      <div class="stat-card"><span>Perlu Audit (≥ 4 Bulan)</span><strong id="statDue" style="color: var(--danger);">0</strong></div>
+    </div>
+
+    <!-- Filter & Pencarian -->
+    <div class="controls-bar">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="all">Semua Peta</button>
+        <button class="tab-btn" data-tab="mine">Peta Saya</button>
+        <button class="tab-btn" data-tab="due">⚠️ Jatuh Tempo Audit</button>
       </div>
+      <div class="filters">
+        <input type="text" id="searchInput" placeholder="Cari nomor / nama daerah / pemegang...">
+        <select id="categoryFilter">
+          <option value="">Semua Kategori</option>
+          <option value="Umum">Umum</option>
+          <option value="Perkotaan">Perkotaan</option>
+          <option value="Daerah Kelompok">Daerah Kelompok</option>
+          <option value="Bisnis">Bisnis</option>
+        </select>
+        <select id="statusFilter">
+          <option value="">Semua Status</option>
+          <option value="Tersedia">Tersedia (Kosong)</option>
+          <option value="Sedang Dikerjakan">Sedang Dikerjakan</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Daftar Kartu Peta -->
+    <div class="territory-grid" id="territoryList">
+      <p style="color: var(--muted);">Memuat data peta dari database...</p>
     </div>
   </main>
 
+  <!-- Modal Detail & Peta Interaktif -->
+  <div class="modal-backdrop" id="detailModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <span class="t-num" id="mNomor">#001</span>
+          <h2 id="mNama" style="font-size: 1.2rem;">Nama Daerah</h2>
+        </div>
+        <button class="close-btn" id="closeModalBtn">✕</button>
+      </div>
+
+      <!-- Peta Interaktif Leaflet -->
+      <div id="mapContainer"></div>
+
+      <!-- Lapis 1: Form Penugasan & Status Aktif -->
+      <div class="form-grid">
+        <div class="field">
+          <label>Koordinator Penanggung Jawab (Email)</label>
+          <input type="email" id="fKoordinator" placeholder="email.koordinator@gmail.com">
+        </div>
+        <div class="field">
+          <label>Kategori / Atribut Peta</label>
+          <select id="fKategori">
+            <option value="Umum">Umum</option>
+            <option value="Perkotaan">Perkotaan</option>
+            <option value="Daerah Kelompok">Daerah Kelompok</option>
+            <option value="Bisnis">Bisnis</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Sedang Dikerjakan Oleh (Pemegang)</label>
+          <input type="text" id="fPemegang" placeholder="Kosongkan jika belum ada">
+        </div>
+        <div class="field">
+          <label>Tanggal Mulai Dikerjakan</label>
+          <input type="date" id="fTglMulai">
+        </div>
+        <div class="field">
+          <label>Jadwal Audit 4 Bulan Berikutnya</label>
+          <input type="date" id="fJatuhTempo">
+        </div>
+        <div class="field">
+          <label>Catatan Lapangan</label>
+          <input type="text" id="fCatatan" placeholder="Catatan tambahan...">
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn btn-primary" id="saveBtn">💾 Simpan Perubahan</button>
+        <button class="btn btn-warning" id="auditContinueBtn">🔄 Audit 4 Bln: Lanjut (+4 Bln)</button>
+        <button class="btn btn-success" id="finishBtn">✅ Selesai & Dikembalikan</button>
+      </div>
+
+      <!-- Lapis 2: Riwayat Permanen -->
+      <div class="history-section">
+        <h3>📜 Riwayat Pengerjaan & Audit Peta Ini</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Pemegang</th>
+              <th>Mulai</th>
+              <th>Keterangan / Hasil Audit</th>
+              <th>Tanggal Kembali</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import { getDatabase, ref, onValue, update, push } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
-    // GANTI DENGAN KONFIGURASI FIREBASE YANG SAMA PERSIS
+    // GANTI DENGAN KONFIGURASI FIREBASE KAMU
     const firebaseConfig = {
-      apiKey: "AIzaSyCzX0UOkVwvRkUuGBWVcec92AWj2tjQeoE",
+      apiKey: "ISI_API_KEY_KAMU",
       authDomain: "territory-assistant-40a9b.firebaseapp.com",
+      databaseURL: "https://territory-assistant-40a9b-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "territory-assistant-40a9b",
       storageBucket: "territory-assistant-40a9b.firebasestorage.app",
-      messagingSenderId: "729411479743",
-      appId: "1:729411479743:web:bc19a775993ff6bf897e0a"
+      messagingSenderId: "ISI_SENDER_ID",
+      appId: "ISI_APP_ID"
     };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getDatabase(app);
 
-    // Proteksi Halaman (Auth Guard)
+    let currentUser = null;
+    let allTerritories = {};
+    let activeTab = "all";
+    let selectedId = null;
+    let map = null;
+    let currentPolygon = null;
+
+    // Cek Auth
     onAuthStateChanged(auth, (user) => {
       if (!user) {
-        // Jika belum login, tendang ke halaman login
         window.location.href = "index.html";
       } else {
-        // Jika sudah login, tampilkan halaman & isi data user
+        currentUser = user;
         document.body.style.display = "flex";
-        document.getElementById("userName").textContent = user.displayName || "Pengguna Terdaftar";
-        document.getElementById("userEmail").textContent = user.email;
-        document.getElementById("userUid").textContent = "UID: " + user.uid;
-
-        if (user.photoURL) {
-          document.getElementById("avatarContainer").innerHTML = `<img src="${user.photoURL}" class="avatar" alt="Foto Profil">`;
-        } else {
-          document.getElementById("avatarContainer").textContent = user.email.charAt(0).toUpperCase();
-        }
+        document.getElementById("userEmailDisplay").textContent = user.email;
+        listenTerritories();
       }
     });
 
-    // Tombol Logout
+    // Helper tambah 4 bulan dari tanggal YYYY-MM-DD
+    function addFourMonths(dateStr) {
+      if (!dateStr) return "";
+      const d = new Date(dateStr);
+      d.setMonth(d.getMonth() + 4);
+      return d.toISOString().split("T")[0];
+    }
+
+    // Cek apakah sudah jatuh tempo audit (<= hari ini)
+    function isAuditDue(t) {
+      if (!t.pemegang || !t.jatuh_tempo_audit) return false;
+      const today = new Date().toISOString().split("T")[0];
+      return t.jatuh_tempo_audit <= today;
+    }
+
+    // Dengarkan perubahan data dari Realtime Database
+    function listenTerritories() {
+      const tRef = ref(db, "territories");
+      onValue(tRef, (snapshot) => {
+        allTerritories = snapshot.val() || {};
+        renderDashboard();
+      });
+    }
+
+    function renderDashboard() {
+      const list = Object.values(allTerritories);
+      const search = document.getElementById("searchInput").value.toLowerCase();
+      const catFilter = document.getElementById("categoryFilter").value;
+      const statFilter = document.getElementById("statusFilter").value;
+
+      // Hitung statistik
+      document.getElementById("statTotal").textContent = list.length;
+      document.getElementById("statMine").textContent = list.filter(t => (t.koordinator || "").toLowerCase() === currentUser.email.toLowerCase()).length;
+      document.getElementById("statActive").textContent = list.filter(t => t.pemegang && t.pemegang.trim() !== "").length;
+      document.getElementById("statDue").textContent = list.filter(t => isAuditDue(t)).length;
+
+      // Filter daftar
+      const filtered = list.filter(t => {
+        if (activeTab === "mine" && (t.koordinator || "").toLowerCase() !== currentUser.email.toLowerCase()) return false;
+        if (activeTab === "due" && !isAuditDue(t)) return false;
+        if (catFilter && t.kategori !== catFilter) return false;
+        const currentStatus = t.pemegang ? "Sedang Dikerjakan" : "Tersedia";
+        if (statFilter && currentStatus !== statFilter) return false;
+        if (search) {
+          const hay = `${t.nomor} ${t.nama} ${t.pemegang} ${t.koordinator}`.toLowerCase();
+          if (!hay.includes(search)) return false;
+        }
+        return true;
+      });
+
+      const container = document.getElementById("territoryList");
+      if (filtered.length === 0) {
+        container.innerHTML = `<p style="color: var(--muted);">Tidak ada peta yang sesuai dengan filter.</p>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(t => {
+        const due = isAuditDue(t);
+        const isWorking = t.pemegang && t.pemegang.trim() !== "";
+        let badgeHtml = `<span class="badge badge-avail">Tersedia</span>`;
+        if (due) badgeHtml = `<span class="badge badge-due">⚠️ Perlu Audit</span>`;
+        else if (isWorking) badgeHtml = `<span class="badge badge-work">Dikerjakan</span>`;
+
+        return `
+          <div class="t-card ${due ? 'due-warning' : ''}" onclick="openDetail('${t.id}')">
+            <div>
+              <div class="t-header">
+                <div>
+                  <div class="t-num">PETA #${t.nomor} • ${t.kategori || 'Umum'}</div>
+                  <div class="t-title">${t.nama}</div>
+                </div>
+                ${badgeHtml}
+              </div>
+              <div class="t-meta" style="margin-top: 0.6rem;">
+                <div>👤 Pemegang: <strong>${t.pemegang || '-'}</strong></div>
+                <div>📅 Mulai: ${t.tanggal_mulai || '-'} ${t.jatuh_tempo_audit ? `| Audit: <strong>${t.jatuh_tempo_audit}</strong>` : ''}</div>
+              </div>
+            </div>
+            <div class="t-footer">
+              <span>Koord: ${t.koordinator || 'Belum diatur'}</span>
+              <span>Klik detail →</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // Buka Modal Detail + Peta Interaktif
+    window.openDetail = function(id) {
+      selectedId = id;
+      const t = allTerritories[id];
+      if (!t) return;
+
+      document.getElementById("mNomor").textContent = `PETA #${t.nomor}`;
+      document.getElementById("mNama").textContent = t.nama;
+      document.getElementById("fKoordinator").value = t.koordinator || "";
+      document.getElementById("fKategori").value = t.kategori || "Umum";
+      document.getElementById("fPemegang").value = t.pemegang || "";
+      document.getElementById("fTglMulai").value = t.tanggal_mulai || "";
+      document.getElementById("fJatuhTempo").value = t.jatuh_tempo_audit || "";
+      document.getElementById("fCatatan").value = t.catatan || "";
+
+      // Render tabel riwayat (Lapis 2)
+      const histBody = document.getElementById("historyTableBody");
+      const riwayatArr = t.riwayat ? Object.values(t.riwayat).reverse() : [];
+      if (riwayatArr.length === 0) {
+        histBody.innerHTML = `<tr><td colspan="4" style="color: var(--muted);">Belum ada riwayat pengerjaan sebelumnya.</td></tr>`;
+      } else {
+        histBody.innerHTML = riwayatArr.map(r => `
+          <tr>
+            <td><strong>${r.pemegang}</strong></td>
+            <td>${r.tanggal_mulai || '-'}</td>
+            <td>${r.keterangan || '-'}</td>
+            <td>${r.tanggal_kembali || '-'}</td>
+          </tr>
+        `).join("");
+      }
+
+      document.getElementById("detailModal").style.display = "flex";
+
+      // Inisialisasi / Update Peta Leaflet
+      setTimeout(() => {
+        if (!map) {
+          map = L.map("mapContainer").setView([-6.89, 109.38], 13);
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "© OpenStreetMap"
+          }).addTo(map);
+        }
+        map.invalidateSize();
+        if (currentPolygon) map.removeLayer(currentPolygon);
+
+        if (t.koordinat && t.koordinat.length > 0) {
+          currentPolygon = L.polygon(t.koordinat, { color: "#2563eb", fillOpacity: 0.25 }).addTo(map);
+          map.fitBounds(currentPolygon.getBounds());
+        }
+      }, 150);
+    };
+
+    // Otomatis isi jatuh tempo 4 bulan saat tanggal mulai diisi
+    document.getElementById("fTglMulai").addEventListener("change", (e) => {
+      if (e.target.value && !document.getElementById("fJatuhTempo").value) {
+        document.getElementById("fJatuhTempo").value = addFourMonths(e.target.value);
+      }
+    });
+
+    // 1. Simpan Perubahan Biasa
+    document.getElementById("saveBtn").addEventListener("click", async () => {
+      if (!selectedId) return;
+      const pemegang = document.getElementById("fPemegang").value.trim();
+      const tglMulai = document.getElementById("fTglMulai").value;
+      let jatuhTempo = document.getElementById("fJatuhTempo").value;
+      if (pemegang && tglMulai && !jatuhTempo) jatuhTempo = addFourMonths(tglMulai);
+
+      await update(ref(db, `territories/${selectedId}`), {
+        koordinator: document.getElementById("fKoordinator").value.trim(),
+        kategori: document.getElementById("fKategori").value,
+        pemegang: pemegang,
+        status: pemegang ? "Sedang Dikerjakan" : "Tersedia",
+        tanggal_mulai: tglMulai,
+        jatuh_tempo_audit: jatuhTempo,
+        catatan: document.getElementById("fCatatan").value.trim()
+      });
+      alert("Data peta berhasil disimpan!");
+    });
+
+    // 2. Audit 4 Bulan: Lanjut (+4 Bulan & Catat ke Riwayat)
+    document.getElementById("auditContinueBtn").addEventListener("click", async () => {
+      if (!selectedId) return;
+      const pemegang = document.getElementById("fPemegang").value.trim();
+      if (!pemegang) return alert("Isi nama pemegang terlebih dahulu!");
+
+      const today = new Date().toISOString().split("T")[0];
+      const nextDue = addFourMonths(today);
+
+      await push(ref(db, `territories/${selectedId}/riwayat`), {
+        pemegang: pemegang,
+        tanggal_mulai: document.getElementById("fTglMulai").value || today,
+        keterangan: `Audit 4 Bln (${today}): Lanjut dikerjakan`,
+        tanggal_kembali: "Masih berjalan"
+      });
+
+      await update(ref(db, `territories/${selectedId}`), {
+        jatuh_tempo_audit: nextDue
+      });
+
+      document.getElementById("fJatuhTempo").value = nextDue;
+      alert(`Audit dicatat! Jadwal audit berikutnya diperpanjang ke ${nextDue}.`);
+      openDetail(selectedId);
+    });
+
+    // 3. Selesai & Dikembalikan (Catat ke Riwayat & Reset Lapis 1)
+    document.getElementById("finishBtn").addEventListener("click", async () => {
+      if (!selectedId) return;
+      const pemegang = document.getElementById("fPemegang").value.trim();
+      if (!pemegang) return alert("Tidak ada pemegang aktif untuk diselesaikan.");
+
+      const today = new Date().toISOString().split("T")[0];
+      const tglMulai = document.getElementById("fTglMulai").value || today;
+
+      await push(ref(db, `territories/${selectedId}/riwayat`), {
+        pemegang: pemegang,
+        tanggal_mulai: tglMulai,
+        keterangan: "Selesai & Dikembalikan",
+        tanggal_kembali: today
+      });
+
+      await update(ref(db, `territories/${selectedId}`), {
+        pemegang: "",
+        status: "Tersedia",
+        tanggal_mulai: "",
+        jatuh_tempo_audit: "",
+        catatan: ""
+      });
+
+      alert("Peta selesai dikembalikan dan riwayat tersimpan!");
+      openDetail(selectedId);
+    });
+
+    // Event Listeners UI
+    document.getElementById("closeModalBtn").addEventListener("click", () => {
+      document.getElementById("detailModal").style.display = "none";
+    });
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        activeTab = btn.dataset.tab;
+        renderDashboard();
+      });
+    });
+    document.getElementById("searchInput").addEventListener("input", renderDashboard);
+    document.getElementById("categoryFilter").addEventListener("change", renderDashboard);
+    document.getElementById("statusFilter").addEventListener("change", renderDashboard);
+
     document.getElementById("logoutBtn").addEventListener("click", async () => {
       await signOut(auth);
       window.location.href = "index.html";
     });
 
-    // Dark/Light Mode Toggle
+    // Theme toggle
     const themeToggle = document.getElementById("themeToggle");
     const savedTheme = localStorage.getItem("theme") || "light";
     document.documentElement.setAttribute("data-theme", savedTheme);
     themeToggle.textContent = savedTheme === "dark" ? "☀️" : "🌙";
-
     themeToggle.addEventListener("click", () => {
-      const current = document.documentElement.getAttribute("data-theme");
-      const next = current === "dark" ? "light" : "dark";
+      const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
       document.documentElement.setAttribute("data-theme", next);
       localStorage.setItem("theme", next);
       themeToggle.textContent = next === "dark" ? "☀️" : "🌙";
