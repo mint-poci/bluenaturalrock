@@ -21,23 +21,10 @@
       --success-soft: #dcfce7;
       --warning: #d97706;
       --warning-soft: #fef3c7;
-      --danger: #dc2626;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
     body { background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-
-    /* Login Overlay */
-    #login-screen {
-      position: fixed; inset: 0; background: #0f172a; z-index: 9999;
-      display: flex; align-items: center; justify-content: center; padding: 20px;
-    }
-    .login-card {
-      background: var(--surface); width: 100%; max-width: 380px; padding: 28px;
-      border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.25);
-    }
-    .login-card h2 { font-size: 20px; margin-bottom: 6px; }
-    .login-card p { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
 
     .form-group { margin-bottom: 14px; }
     .form-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--muted); }
@@ -54,9 +41,6 @@
     }
     .btn-primary { background: var(--primary); color: #fff; }
     .btn-primary:hover { background: #1d4ed8; }
-    .btn-outline { background: #fff; border: 1px solid var(--border); color: var(--text); }
-    .btn-outline:hover { background: #f1f5f9; }
-    .btn-success { background: var(--success); color: #fff; }
     .btn-block { width: 100%; }
 
     /* Header */
@@ -67,7 +51,7 @@
     }
     .brand { display: flex; align-items: center; gap: 10px; }
     .brand h1 { font-size: 16px; font-weight: 700; }
-    .user-badge {
+    .header-badge {
       font-size: 12px; background: var(--primary-soft); color: var(--primary);
       padding: 4px 10px; border-radius: 999px; font-weight: 600;
     }
@@ -145,33 +129,12 @@
 </head>
 <body>
 
-  <!-- Login Screen -->
-  <div id="login-screen">
-    <div class="login-card">
-      <h2>Portal Peta Daerah</h2>
-      <p>Masuk menggunakan akun Hamba Daerah atau Asisten.</p>
-      <div class="form-group">
-        <label>Pilih Akun</label>
-        <select id="login-user" class="form-control">
-          <option value="">Memuat daftar akun...</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>PIN Akses</label>
-        <input type="password" id="login-pin" class="form-control" placeholder="Masukkan PIN (default: 1234)" />
-      </div>
-      <button id="btn-login" class="btn btn-primary btn-block">Masuk ke Dashboard</button>
-      <p id="login-error" style="color: var(--danger); margin-top: 10px; margin-bottom: 0; display: none;"></p>
-    </div>
-  </div>
-
   <!-- Header -->
   <header>
     <div class="brand">
       <h1>Portal Peta Daerah</h1>
-      <span id="active-user-badge" class="user-badge">-</span>
+      <span class="header-badge">KDL Tegal & Pemalang</span>
     </div>
-    <button id="btn-logout" class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;">Keluar</button>
   </header>
 
   <!-- Main Workspace -->
@@ -253,7 +216,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getDatabase, ref, onValue, set, update, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
     // =========================================================================
     // GANTI DENGAN KONFIGURASI FIREBASE PROJECT KAMU
@@ -271,9 +234,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // State Aplikasi
-    let allUsers = {};
-    let currentUser = null;
     let allTerritories = {};
     let activeKdl = "ALL";
     let searchQuery = "";
@@ -287,65 +247,13 @@
     }).addTo(map);
     const polygonLayerGroup = L.layerGroup().addTo(map);
 
-    // 1. Auto-seeding & Load Users (Aman tanpa menyentuh node territories)
-    async function initUsers() {
-      const usersRef = ref(db, "users");
-      const snap = await get(usersRef);
-      if (!snap.exists()) {
-        const defaultUsers = {
-          hamba_daerah: { name: "Hamba Daerah", role: "Admin", pin: "1234" },
-          asisten_1: { name: "Asisten 1", role: "Asisten", pin: "1234" },
-          asisten_2: { name: "Asisten 2", role: "Asisten", pin: "1234" }
-        };
-        await set(usersRef, defaultUsers);
-      }
-
-      onValue(usersRef, (snapshot) => {
-        allUsers = snapshot.val() || {};
-        const select = document.getElementById("login-user");
-        select.innerHTML = "";
-        Object.entries(allUsers).forEach(([uid, u]) => {
-          const opt = document.createElement("option");
-          opt.value = uid;
-          opt.textContent = `${u.name} (${u.role})`;
-          select.appendChild(opt);
-        });
-      });
-    }
-
-    // Login & Logout
-    document.getElementById("btn-login").addEventListener("click", () => {
-      const uid = document.getElementById("login-user").value;
-      const pin = document.getElementById("login-pin").value.trim();
-      const errEl = document.getElementById("login-error");
-
-      if (!uid || !allUsers[uid]) return;
-      if (String(allUsers[uid].pin) !== pin) {
-        errEl.textContent = "PIN salah. Silakan coba lagi.";
-        errEl.style.display = "block";
-        return;
-      }
-
-      errEl.style.display = "none";
-      currentUser = { uid, ...allUsers[uid] };
-      document.getElementById("active-user-badge").textContent = currentUser.name;
-      document.getElementById("login-screen").style.display = "none";
-      setTimeout(() => map.invalidateSize(), 200);
-    });
-
-    document.getElementById("btn-logout").addEventListener("click", () => {
-      currentUser = null;
-      document.getElementById("login-pin").value = "";
-      document.getElementById("login-screen").style.display = "flex";
-    });
-
-    // 2. Listen Data Territories dari Firebase
+    // Listen Data Territories dari Firebase
     onValue(ref(db, "territories"), (snapshot) => {
       allTerritories = snapshot.val() || {};
       renderTerritories();
     });
 
-    // 3. Render & Pengurutan Numerik (1, 2, 3, ..., 10, ..., 100)
+    // Render & Pengurutan Numerik Asli (1, 2, 3, ..., 10, ..., 100)
     function renderTerritories() {
       const listEl = document.getElementById("territory-list");
       const q = searchQuery.toLowerCase();
@@ -359,7 +267,6 @@
           const pemegang = (t.pemegang || "").toLowerCase();
           return judulLengkap.includes(q) || pemegang.includes(q) || String(t.nomor) === q;
         })
-        // PENGURUTAN NUMERIK ASLI (1, 2, 3, ..., 10, ..., 100)
         .sort((a, b) => (parseInt(a.nomor, 10) || 0) - (parseInt(b.nomor, 10) || 0));
 
       const tersediaCount = filtered.filter((t) => t.status !== "Dipinjam").length;
@@ -373,7 +280,6 @@
         const isDipinjam = t.status === "Dipinjam";
         const judulFormat = `Daerah ${t.nomor} - ${t.nama}`;
 
-        // Render Item Daftar Sidebar
         const itemDiv = document.createElement("div");
         itemDiv.className = `territory-item ${t._key === selectedId ? "selected" : ""}`;
         itemDiv.innerHTML = `
@@ -388,7 +294,6 @@
         itemDiv.addEventListener("click", () => selectTerritory(t._key));
         listEl.appendChild(itemDiv);
 
-        // Gambar Poligon di Peta Leaflet
         if (Array.isArray(t.koordinat) && t.koordinat.length > 0) {
           const isSelected = t._key === selectedId;
           const poly = L.polygon(t.koordinat, {
@@ -403,7 +308,7 @@
       });
     }
 
-    // 4. Pilih Peta & Buka Panel Detail
+    // Pilih Peta & Buka Panel Detail
     function selectTerritory(key) {
       selectedId = key;
       const t = allTerritories[key];
@@ -430,10 +335,11 @@
       }
     }
 
-    // Simpan Perubahan ke Firebase (Hanya update pada child spesifik agar aman)
+    // Simpan Perubahan ke Firebase
     document.getElementById("btn-save-territory").addEventListener("click", async () => {
       if (!selectedId) return;
-      const nomorBaru = String(parseInt(document.getElementById("edit-nomor").value.trim(), 10) || document.getElementById("edit-nomor").value.trim());
+      const nomorInput = document.getElementById("edit-nomor").value.trim();
+      const nomorBaru = nomorInput.isdigit ? String(parseInt(nomorInput, 10)) : (String(parseInt(nomorInput, 10) || nomorInput));
       const namaBaru = document.getElementById("edit-nama").value.trim();
       const kdlBaru = document.getElementById("edit-kdl").value;
       const statusBaru = document.getElementById("edit-status").value;
@@ -474,8 +380,6 @@
       selectedId = null;
       renderTerritories();
     });
-
-    initUsers();
   </script>
 </body>
 </html>
