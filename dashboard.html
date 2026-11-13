@@ -20,6 +20,14 @@
       --border: #334155; --primary: #3b82f6; --hover: #263349;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+    
+    /* Kunci halaman agar tidak pernah geser kanan-kiri di HP */
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
+      overscroll-behavior-x: none;
+    }
+
     body {
       background: var(--bg); color: var(--text); min-height: 100vh;
       display: none; flex-direction: column; padding-bottom: 4rem;
@@ -62,7 +70,7 @@
     .search-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
     .search-row input, .search-row select {
       padding: 0.55rem 0.75rem; border-radius: 10px; border: 1px solid var(--border);
-      background: var(--card); color: var(--text); font-size: 0.85rem;
+      background: var(--card); color: var(--text); font-size: 0.85rem; min-width: 0;
     }
     .search-row input { flex: 1; }
 
@@ -102,42 +110,44 @@
     .b-work { background: rgba(37, 99, 235, 0.12); color: var(--primary); }
     .b-due { background: rgba(239, 68, 68, 0.14); color: var(--danger); }
 
-    /* Bottom Sheet / Modal Detail Peta */
+    /* Bottom Sheet / Modal Detail Peta Terkunci Anti-Geser */
     .modal-backdrop {
-      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65);
+      position: fixed; inset: 0; width: 100vw; max-width: 100%; overflow-x: hidden;
+      background: rgba(15, 23, 42, 0.65);
       display: none; align-items: flex-end; justify-content: center; z-index: 200;
+    }
+    .modal {
+      background: var(--card); width: 100%; max-width: 100%; max-height: 92vh;
+      overflow-y: auto; overflow-x: hidden; border-radius: 20px 20px 0 0; padding: 1.25rem;
     }
     @media (min-width: 640px) {
       .modal-backdrop { align-items: center; padding: 1rem; }
-      .modal { border-radius: 16px !important; max-height: 88vh !important; }
-    }
-    .modal {
-      background: var(--card); width: 100%; max-width: 620px; max-height: 92vh;
-      overflow-y: auto; border-radius: 20px 20px 0 0; padding: 1.25rem;
+      .modal { border-radius: 16px; max-width: 620px; max-height: 88vh; }
     }
     .modal-header {
       display: flex; justify-content: space-between; align-items: flex-start;
       margin-bottom: 0.85rem; gap: 0.5rem;
     }
+    .modal-header > div { min-width: 0; flex: 1; }
     .close-btn {
       background: var(--bg); border: 1px solid var(--border); color: var(--text);
       width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-weight: 700; flex-shrink: 0;
     }
     #mapContainer {
-      height: 210px; width: 100%; border-radius: 12px;
+      height: 210px; width: 100%; max-width: 100%; border-radius: 12px;
       border: 1px solid var(--border); margin-bottom: 1rem; z-index: 1;
     }
 
     /* Form Detail Sederhana */
-    .field { margin-bottom: 0.85rem; }
+    .field { margin-bottom: 0.85rem; max-width: 100%; }
     .field label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--muted); margin-bottom: 0.3rem; }
     .field input, .field select {
-      width: 100%; padding: 0.65rem 0.8rem; border-radius: 10px;
+      width: 100%; max-width: 100%; min-width: 0; padding: 0.65rem 0.8rem; border-radius: 10px;
       border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.9rem;
     }
     .admin-box {
       background: rgba(37, 99, 235, 0.05); border: 1px dashed var(--primary);
-      border-radius: 12px; padding: 0.85rem; margin-bottom: 0.9rem;
+      border-radius: 12px; padding: 0.85rem; margin-bottom: 0.9rem; max-width: 100%;
     }
     .admin-box-title { font-size: 0.72rem; font-weight: 700; color: var(--primary); margin-bottom: 0.6rem; text-transform: uppercase; }
     .auto-info {
@@ -169,7 +179,7 @@
     }
     .member-row {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem;
+      padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; gap: 0.5rem;
     }
   </style>
 </head>
@@ -232,7 +242,7 @@
       <div class="modal-header">
         <div>
           <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary);" id="mSubHeader">#001 • Umum</div>
-          <h2 style="font-size: 1.15rem; margin-top: 0.1rem;" id="mNama">Nama Daerah</h2>
+          <h2 style="font-size: 1.15rem; margin-top: 0.1rem; word-wrap: break-word;" id="mNama">Nama Daerah</h2>
         </div>
         <button class="close-btn" id="closeModalBtn">✕</button>
       </div>
@@ -297,12 +307,12 @@
     import { getDatabase, ref, onValue, update, push, set, remove, get } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyCzX0UOkVwvRkUuGBWVcec92AWj2tjQeoE",
-      authDomain: "territory-assistant-40a9b.firebaseapp.com",
-      projectId: "territory-assistant-40a9b",
-      storageBucket: "territory-assistant-40a9b.firebasestorage.app",
-      messagingSenderId: "729411479743",
-      appId: "1:729411479743:web:bc19a775993ff6bf897e0a"
+        apiKey: "AIzaSyCzX0UOkVwvRkUuGBWVcec92AWj2tjQeoE",
+        authDomain: "territory-assistant-40a9b.firebaseapp.com",
+        projectId: "territory-assistant-40a9b",
+        storageBucket: "territory-assistant-40a9b.firebasestorage.app",
+        messagingSenderId: "729411479743",
+        appId: "1:729411479743:web:bc19a775993ff6bf897e0a"
     };
 
     const SUPER_ADMIN = "edenpemalang@gmail.com";
@@ -332,12 +342,10 @@
       const userEmail = user.email.toLowerCase();
       const userKey = emailToKey(userEmail);
 
-      // Pastikan Super Admin selalu terdaftar di node users
       if (userEmail === SUPER_ADMIN) {
         await set(ref(db, `users/${userKey}`), { email: userEmail, name: "Eden (Super Admin)", role: "admin" });
       }
 
-      // Cek apakah user ada di daftar whitelist
       const snap = await get(ref(db, `users/${userKey}`));
       if (!snap.exists() && userEmail !== SUPER_ADMIN) {
         alert("Maaf, email Anda (" + user.email + ") belum terdaftar sebagai koordinator. Hubungi Admin.");
@@ -354,7 +362,7 @@
       if (isAdmin) {
         document.getElementById("adminTabBtn").style.display = "inline-block";
         document.getElementById("adminOnlyFields").style.display = "block";
-        activeTab = "all"; // Admin default lihat semua peta
+        activeTab = "all";
         document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === "all"));
       }
 
@@ -389,9 +397,9 @@
 
       listEl.innerHTML = membersArr.map(m => `
         <div class="member-row">
-          <div>
+          <div style="min-width:0; flex:1;">
             <strong>${m.name || m.email}</strong> <span class="role-tag">${m.role}</span>
-            <div style="font-size:0.75rem; color:var(--muted);">${m.email}</div>
+            <div style="font-size:0.75rem; color:var(--muted); overflow:hidden; text-overflow:ellipsis;">${m.email}</div>
           </div>
           ${m.email !== SUPER_ADMIN ? `<button class="btn-sm btn-logout" onclick="removeMember('${m.email}')">Hapus</button>` : '<span style="font-size:0.72rem; color:var(--muted);">Utama</span>'}
         </div>
@@ -485,6 +493,11 @@
       }).join("");
     }
 
+    function closeModal() {
+      document.getElementById("detailModal").style.display = "none";
+      document.body.style.overflow = "";
+    }
+
     window.openDetail = function(id) {
       selectedId = id;
       const t = allTerritories[id];
@@ -507,7 +520,6 @@
 
       updateAutoAuditText(t.tanggal_mulai, t.jatuh_tempo_audit);
 
-      // Render Riwayat Lapis 2
       const histEl = document.getElementById("historyList");
       const riwayatArr = t.riwayat ? Object.values(t.riwayat).reverse() : [];
       histEl.innerHTML = riwayatArr.length === 0
@@ -520,6 +532,7 @@
           `).join("");
 
       document.getElementById("detailModal").style.display = "flex";
+      document.body.style.overflow = "hidden";
 
       setTimeout(() => {
         if (!map) {
@@ -555,7 +568,6 @@
       const t = allTerritories[selectedId];
       const pemegang = document.getElementById("fPemegang").value.trim();
       const tglMulai = document.getElementById("fTglMulai").value;
-      // Hitung otomatis 4 bulan jika tanggal mulai berubah atau belum ada jatuh tempo
       let jatuhTempo = "";
       if (pemegang && tglMulai) {
         jatuhTempo = (tglMulai === t.tanggal_mulai && t.jatuh_tempo_audit) ? t.jatuh_tempo_audit : addFourMonths(tglMulai);
@@ -575,7 +587,7 @@
       }
 
       await update(ref(db, `territories/${selectedId}`), payload);
-      document.getElementById("detailModal").style.display = "none";
+      closeModal();
     });
 
     // Audit 4 Bulan: Lanjut
@@ -628,7 +640,7 @@
       });
     });
 
-    document.getElementById("closeModalBtn").addEventListener("click", () => document.getElementById("detailModal").style.display = "none");
+    document.getElementById("closeModalBtn").addEventListener("click", closeModal);
     document.getElementById("searchInput").addEventListener("input", renderList);
     document.getElementById("statusFilter").addEventListener("change", renderList);
     document.getElementById("logoutBtn").addEventListener("click", async () => { await signOut(auth); window.location.href = "index.html"; });
