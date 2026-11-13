@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #ef4444;
+    }
+    [data-theme="dark"] {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: none; /* Disembunyikan sampai status login terverifikasi */
+      flex-direction: column;
+    }
+    nav {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nav-actions { display: flex; gap: 0.75rem; align-items: center; }
+    .btn-icon {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.45rem 0.7rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .btn-logout {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    main {
+      max-width: 800px;
+      width: 100%;
+      margin: 2.5rem auto;
+      padding: 0 1.5rem;
+    }
+    .welcome-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+    .avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #2563eb;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.5rem;
+    }
+    .info h2 { font-size: 1.25rem; margin-bottom: 0.25rem; }
+    .info p { color: var(--muted); font-size: 0.9rem; }
+    .badge {
+      display: inline-block;
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      background: rgba(37, 99, 235, 0.1);
+      color: #3b82f6;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <strong>Portal Member</strong>
+    <div class="nav-actions">
+      <button class="btn-icon" id="themeToggle">🌙</button>
+      <button class="btn-logout" id="logoutBtn">Keluar</button>
+    </div>
+  </nav>
+
+  <main>
+    <div class="welcome-card">
+      <div id="avatarContainer" class="avatar">U</div>
+      <div class="info">
+        <h2 id="userName">Memuat profil...</h2>
+        <p id="userEmail">email@domain.com</p>
+        <span class="badge" id="userUid">UID: -</span>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+    // GANTI DENGAN KONFIGURASI FIREBASE YANG SAMA PERSIS
+    const firebaseConfig = {
+      apiKey: "AIzaSyCzX0UOkVwvRkUuGBWVcec92AWj2tjQeoE",
+      authDomain: "territory-assistant-40a9b.firebaseapp.com",
+      projectId: "territory-assistant-40a9b",
+      storageBucket: "territory-assistant-40a9b.firebasestorage.app",
+      messagingSenderId: "729411479743",
+      appId: "1:729411479743:web:bc19a775993ff6bf897e0a"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Proteksi Halaman (Auth Guard)
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        // Jika belum login, tendang ke halaman login
+        window.location.href = "index.html";
+      } else {
+        // Jika sudah login, tampilkan halaman & isi data user
+        document.body.style.display = "flex";
+        document.getElementById("userName").textContent = user.displayName || "Pengguna Terdaftar";
+        document.getElementById("userEmail").textContent = user.email;
+        document.getElementById("userUid").textContent = "UID: " + user.uid;
+
+        if (user.photoURL) {
+          document.getElementById("avatarContainer").innerHTML = `<img src="${user.photoURL}" class="avatar" alt="Foto Profil">`;
+        } else {
+          document.getElementById("avatarContainer").textContent = user.email.charAt(0).toUpperCase();
+        }
+      }
+    });
+
+    // Tombol Logout
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await signOut(auth);
+      window.location.href = "index.html";
+    });
+
+    // Dark/Light Mode Toggle
+    const themeToggle = document.getElementById("themeToggle");
+    const savedTheme = localStorage.getItem("theme") || "light";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    themeToggle.textContent = savedTheme === "dark" ? "☀️" : "🌙";
+
+    themeToggle.addEventListener("click", () => {
+      const current = document.documentElement.getAttribute("data-theme");
+      const next = current === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      localStorage.setItem("theme", next);
+      themeToggle.textContent = next === "dark" ? "☀️" : "🌙";
+    });
+  </script>
+</body>
+</html>
