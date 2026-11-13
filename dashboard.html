@@ -399,7 +399,7 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db = getDatabase(app);
+    const db = getDatabase(app, "https://territory-assistant-40a9b-default-rtdb.asia-southeast1.firebasedatabase.app");
 
     let currentUser = null;
     let allTerritories = {};
