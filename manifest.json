@@ -1,6 +1,6 @@
 {
-  "name": "Portal Peta Daerah",
-  "short_name": "Peta Daerah",
+  "name": "Terita - Territory Assistant",
+  "short_name": "Terita",
   "description": "Portal monitoring dan audit peta daerah",
   "start_url": "./index.html",
   "scope": "./",

@@ -15,349 +15,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    :root {
-      --bg-mesh: radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.14) 0px, transparent 50%),
-                 radial-gradient(at 100% 15%, rgba(16, 185, 129, 0.12) 0px, transparent 50%),
-                 radial-gradient(at 50% 100%, rgba(99, 102, 241, 0.12) 0px, transparent 55%),
-                 #eef2f9;
-      --glass-bg: rgba(255, 255, 255, 0.72);
-      --glass-strong: rgba(255, 255, 255, 0.88);
-      --glass-border: rgba(255, 255, 255, 0.7);
-      --glass-shadow: 0 6px 24px rgba(15, 23, 42, 0.05);
-      --input-bg: rgba(255, 255, 255, 0.65);
-      --text: #0f172a; --muted: #64748b;
-      --primary: #2563eb; --success: #10b981;
-      --warning: #f59e0b; --danger: #ef4444;
-      --hover: rgba(255, 255, 255, 0.92);
-    }
-    [data-theme="dark"] {
-      --bg-mesh: radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.22) 0px, transparent 55%),
-                 radial-gradient(at 100% 20%, rgba(16, 185, 129, 0.14) 0px, transparent 50%),
-                 radial-gradient(at 50% 100%, rgba(79, 70, 229, 0.18) 0px, transparent 60%),
-                 #090e1a;
-      --glass-bg: rgba(30, 41, 59, 0.62);
-      --glass-strong: rgba(22, 32, 50, 0.86);
-      --glass-border: rgba(255, 255, 255, 0.12);
-      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-      --input-bg: rgba(15, 23, 42, 0.6);
-      --text: #f8fafc; --muted: #94a3b8;
-      --primary: #3b82f6; --hover: rgba(51, 65, 85, 0.65);
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; }
-
-    html, body { max-width: 100%; overflow-x: hidden; overscroll-behavior-x: none; }
-
-    body {
-      background: var(--bg-mesh);
-      background-attachment: fixed;
-      color: var(--text); min-height: 100vh;
-      display: none; flex-direction: column; padding-bottom: 6.5rem;
-    }
-
-    svg.ico { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
-    svg.ico-sm { width: 15px; height: 15px; }
-
-    /* Top Header Glass */
-    nav.top-nav {
-      background: var(--glass-strong);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-      border-bottom: 1px solid var(--glass-border);
-      padding: 0.7rem 1rem; display: flex; justify-content: space-between;
-      align-items: center; position: sticky; top: 0; z-index: 100;
-    }
-    .brand { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 0.45rem; }
-    .brand svg { color: var(--primary); }
-    .role-tag {
-      font-size: 0.65rem; padding: 0.15rem 0.5rem; border-radius: 99px;
-      background: rgba(37, 99, 235, 0.12); color: var(--primary); font-weight: 700;
-      border: 1px solid rgba(37, 99, 235, 0.2);
-    }
-    .nav-actions { display: flex; gap: 0.45rem; align-items: center; }
-    .btn-icon {
-      width: 34px; height: 34px; border-radius: 50%; cursor: pointer;
-      border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text);
-      display: inline-flex; align-items: center; justify-content: center;
-    }
-    .btn-sm {
-      border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.76rem;
-      padding: 0.42rem 0.7rem; border: 1px solid var(--glass-border);
-      background: var(--input-bg); color: var(--text);
-      display: inline-flex; align-items: center; gap: 0.35rem;
-    }
-    .btn-install { background: var(--primary); color: #fff; border-color: transparent; display: none; }
-    .btn-logout { background: rgba(239, 68, 68, 0.12); color: var(--danger); border-color: rgba(239, 68, 68, 0.2); }
-
-    main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
-
-    /* Halaman 1: Beranda Ringkas */
-    .welcome-compact {
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.9) 0%, rgba(29, 78, 216, 0.85) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      box-shadow: 0 10px 26px rgba(37, 99, 235, 0.22);
-      color: #ffffff; border-radius: 18px; padding: 1rem 1.15rem;
-      margin-bottom: 0.85rem; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
-    }
-    .welcome-time { font-size: 0.74rem; opacity: 0.88; font-weight: 500; }
-    .welcome-name { font-size: 1.2rem; font-weight: 700; margin-top: 0.1rem; }
-    .kdl-pill {
-      display: inline-flex; align-items: center; gap: 0.3rem;
-      font-size: 0.72rem; font-weight: 600;
-      background: rgba(255, 255, 255, 0.18);
-      border: 1px solid rgba(255, 255, 255, 0.28);
-      padding: 0.28rem 0.65rem; border-radius: 99px; white-space: nowrap;
-    }
-
-    .overview-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.55rem;
-      margin-bottom: 0.85rem;
-    }
-    .ov-card {
-      background: var(--glass-bg);
-      backdrop-filter: blur(16px) saturate(180%);
-      -webkit-backdrop-filter: blur(16px) saturate(180%);
-      border: 1px solid var(--glass-border);
-      box-shadow: var(--glass-shadow);
-      border-radius: 16px; padding: 0.85rem 0.45rem; text-align: center; cursor: pointer;
-      transition: transform 0.12s ease;
-    }
-    .ov-card:active { transform: scale(0.97); }
-    .ov-card strong { display: block; font-size: 1.35rem; font-weight: 700; }
-    .ov-card span { display: block; font-size: 0.72rem; color: var(--muted); margin-top: 0.15rem; font-weight: 500; }
-
-    .alert-banner {
-      background: rgba(239, 68, 68, 0.12);
-      border: 1px solid rgba(239, 68, 68, 0.26);
-      color: var(--danger); border-radius: 14px; padding: 0.75rem 0.95rem;
-      margin-bottom: 0.85rem; font-size: 0.8rem; display: none;
-      justify-content: space-between; align-items: center; gap: 0.5rem; cursor: pointer;
-    }
-
-    .section-card {
-      background: var(--glass-bg);
-      backdrop-filter: blur(16px) saturate(180%);
-      -webkit-backdrop-filter: blur(16px) saturate(180%);
-      border: 1px solid var(--glass-border);
-      box-shadow: var(--glass-shadow);
-      border-radius: 18px; padding: 1rem; margin-bottom: 0.9rem;
-    }
-    .section-header-row {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;
-    }
-    .section-title { font-size: 0.88rem; font-weight: 700; }
-
-    .kdl-summary-row {
-      display: flex; flex-direction: column; gap: 0.35rem;
-      padding: 0.65rem 0.4rem; border-bottom: 1px solid var(--glass-border);
-      font-size: 0.84rem; cursor: pointer; border-radius: 10px; transition: background 0.12s;
-    }
-    .kdl-summary-row:hover, .kdl-summary-row:active { background: var(--hover); }
-    .kdl-summary-row:last-child { border-bottom: none; }
-    .kdl-row-top { display: flex; justify-content: space-between; align-items: center; }
-    .progress-track {
-      width: 100%; height: 5px; background: rgba(148, 163, 184, 0.2);
-      border-radius: 99px; overflow: hidden;
-    }
-    .progress-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width 0.3s ease; }
-
-    /* Halaman 2: Daftar Peta Sederhana */
-    .filter-strip {
-      display: flex; gap: 0.4rem; overflow-x: auto; padding: 0.1rem 0.25rem 0.45rem 0;
-      margin-bottom: 0.6rem; scrollbar-width: none;
-    }
-    .filter-strip::-webkit-scrollbar { display: none; }
-    .pill-btn {
-      padding: 0.42rem 0.8rem; border-radius: 99px;
-      border: 1px solid var(--glass-border);
-      background: var(--glass-bg);
-      color: var(--muted); font-size: 0.76rem; font-weight: 600;
-      white-space: nowrap; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem;
-    }
-    .pill-btn.active {
-      background: var(--primary); color: #fff; border-color: transparent;
-      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.28);
-    }
-    .pill-btn.due-pill.active { background: var(--danger); box-shadow: 0 3px 10px rgba(239, 68, 68, 0.28); }
-
-    .search-bar-wrap { display: flex; gap: 0.45rem; margin-bottom: 0.7rem; align-items: center; }
-    .search-input-box { position: relative; flex: 1; min-width: 0; }
-    .search-input-box svg {
-      position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%);
-      color: var(--muted); pointer-events: none;
-    }
-    .search-input-box input {
-      width: 100%; padding: 0.6rem 0.8rem 0.6rem 2.2rem; border-radius: 12px;
-      border: 1px solid var(--glass-border); background: var(--glass-bg);
-      color: var(--text); font-size: 0.84rem;
-    }
-    .btn-bulk-icon {
-      height: 38px; padding: 0 0.75rem; border-radius: 12px;
-      border: 1px solid var(--glass-border); background: var(--glass-bg);
-      color: var(--text); font-size: 0.76rem; font-weight: 600;
-      display: none; align-items: center; gap: 0.35rem; cursor: pointer; flex-shrink: 0;
-    }
-    .btn-bulk-icon.active { background: var(--primary); color: #fff; border-color: transparent; }
-
-    .bulk-subbar {
-      display: none; justify-content: space-between; align-items: center;
-      margin-bottom: 0.55rem; font-size: 0.78rem; color: var(--muted); padding: 0 0.2rem;
-    }
-
-    .list-container {
-      background: var(--glass-bg);
-      backdrop-filter: blur(16px) saturate(180%);
-      -webkit-backdrop-filter: blur(16px) saturate(180%);
-      border: 1px solid var(--glass-border);
-      box-shadow: var(--glass-shadow);
-      border-radius: 18px; overflow: hidden;
-    }
-    .list-item {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0.78rem 0.95rem; border-bottom: 1px solid var(--glass-border);
-      cursor: pointer; gap: 0.65rem; transition: background 0.12s;
-    }
-    .list-item:last-child { border-bottom: none; }
-    .list-item:active, .list-item:hover { background: var(--hover); }
-    .list-item.is-due { border-left: 3.5px solid var(--danger); }
-    .bulk-check { width: 18px; height: 18px; accent-color: var(--primary); flex-shrink: 0; display: none; cursor: pointer; }
-    .item-left { display: flex; align-items: center; gap: 0.65rem; min-width: 0; flex: 1; }
-    .item-num {
-      font-size: 0.74rem; font-weight: 700; color: var(--primary);
-      background: rgba(37, 99, 235, 0.12); padding: 0.28rem 0.52rem;
-      border-radius: 8px; flex-shrink: 0; min-width: 2.3rem; text-align: center;
-    }
-    .item-info { min-width: 0; flex: 1; }
-    .item-title { font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .item-sub { font-size: 0.74rem; color: var(--muted); margin-top: 0.12rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .badge { font-size: 0.69rem; font-weight: 700; padding: 0.24rem 0.58rem; border-radius: 99px; flex-shrink: 0; }
-    .b-avail { background: rgba(16, 185, 129, 0.14); color: var(--success); }
-    .b-work { background: rgba(37, 99, 235, 0.14); color: var(--primary); }
-    .b-due { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
-
-    /* Bilah Bulk Assign Melayang */
-    .bulk-action-bar {
-      position: fixed; bottom: 4.8rem; left: 50%; transform: translateX(-50%);
-      width: calc(100% - 1.5rem); max-width: 640px;
-      background: var(--glass-strong);
-      backdrop-filter: blur(22px) saturate(190%);
-      -webkit-backdrop-filter: blur(22px) saturate(190%);
-      border: 1.5px solid var(--primary);
-      border-radius: 16px; padding: 0.7rem 0.9rem;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.18);
-      display: none; align-items: center; justify-content: space-between;
-      gap: 0.5rem; z-index: 120;
-    }
-    .bulk-action-bar select {
-      padding: 0.45rem 0.65rem; border-radius: 10px;
-      border: 1px solid var(--glass-border);
-      background: var(--input-bg); color: var(--text); font-size: 0.8rem; font-weight: 600;
-    }
-
-    /* Bottom Navigation Bar Floating Glass */
-    .bottom-nav {
-      position: fixed; bottom: 0.7rem; left: 50%; transform: translateX(-50%);
-      width: calc(100% - 1.5rem); max-width: 420px;
-      background: var(--glass-strong);
-      backdrop-filter: blur(22px) saturate(190%);
-      -webkit-backdrop-filter: blur(22px) saturate(190%);
-      border: 1px solid var(--glass-border);
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
-      border-radius: 99px;
-      display: flex; justify-content: space-around; align-items: center;
-      padding: 0.4rem 0.45rem;
-      z-index: 110;
-    }
-    .bnav-btn {
-      background: transparent; border: none; color: var(--muted);
-      display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
-      font-size: 0.69rem; font-weight: 600; cursor: pointer; flex: 1;
-      padding: 0.35rem 0; border-radius: 99px; transition: all 0.15s ease;
-    }
-    .bnav-btn.active { color: var(--primary); background: rgba(37, 99, 235, 0.12); }
-
-    /* Modal Sheet */
-    .modal-backdrop {
-      position: fixed; inset: 0; width: 100vw; max-width: 100%; overflow: hidden;
-      overscroll-behavior: contain;
-      background: rgba(15, 23, 42, 0.45);
-      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-      display: none; align-items: flex-end; justify-content: center; z-index: 200;
-    }
-    .modal {
-      background: var(--glass-strong);
-      backdrop-filter: blur(26px) saturate(190%);
-      -webkit-backdrop-filter: blur(26px) saturate(190%);
-      border-top: 1px solid var(--glass-border);
-      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.18);
-      width: 100%; max-width: 100%; max-height: 92vh;
-      overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
-      -webkit-overflow-scrolling: touch;
-      border-radius: 26px 26px 0 0; padding: 1.25rem;
-    }
-    @media (min-width: 640px) {
-      .modal-backdrop { align-items: center; padding: 1rem; }
-      .modal { border: 1px solid var(--glass-border); border-radius: 24px; max-width: 600px; max-height: 88vh; }
-    }
-    .modal-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 0.8rem; gap: 0.5rem;
-    }
-    .close-btn {
-      background: var(--input-bg); border: 1px solid var(--glass-border); color: var(--text);
-      width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
-      display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-    #mapContainer {
-      height: 195px; width: 100%; max-width: 100%; border-radius: 16px;
-      border: 1px solid var(--glass-border); margin-bottom: 0.9rem; z-index: 1;
-    }
-
-    .field { margin-bottom: 0.8rem; max-width: 100%; }
-    .field label { display: block; font-size: 0.76rem; font-weight: 600; color: var(--muted); margin-bottom: 0.3rem; }
-    .field input, .field select {
-      width: 100%; max-width: 100%; min-width: 0; padding: 0.65rem 0.85rem; border-radius: 12px;
-      border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text); font-size: 0.88rem;
-      display: block;
-    }
-    .field select { padding-right: 2rem; text-overflow: ellipsis; }
-    .field input[type="date"] { -webkit-appearance: none; appearance: none; min-height: 2.65rem; line-height: 1.2; }
-    .field input[type="date"]::-webkit-date-and-time-value { text-align: left; }
-
-    .btn-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.15rem; }
-    .action-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-    .btn {
-      width: 100%; padding: 0.75rem; border-radius: 14px; border: none;
-      font-weight: 600; font-size: 0.86rem; cursor: pointer;
-      display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
-    }
-    .btn-primary { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; box-shadow: 0 6px 18px rgba(37, 99, 235, 0.28); }
-    .btn-wa { background: rgba(37, 211, 102, 0.16); color: #16a34a; border: 1px solid rgba(37, 211, 102, 0.35); }
-    [data-theme="dark"] .btn-wa { color: #4ade80; }
-    .btn-warning { background: rgba(245, 158, 11, 0.16); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.26); }
-    .btn-success { background: rgba(16, 185, 129, 0.16); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.26); }
-
-    .history-box h4 { font-size: 0.82rem; color: var(--muted); }
-    .hist-item {
-      font-size: 0.78rem; padding: 0.55rem 0; border-bottom: 1px solid var(--glass-border);
-      display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
-    }
-    .hist-item:last-child { border-bottom: none; }
-
-    /* Halaman 3: Anggota Rapi */
-    .member-row {
-      display: flex; flex-direction: column; gap: 0.55rem;
-      padding: 0.8rem 0; border-bottom: 1px solid var(--glass-border); font-size: 0.85rem;
-    }
-    .member-row:last-child { border-bottom: none; }
-    .member-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
-    .member-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem; }
-    .member-controls select {
-      width: 100%; min-width: 0; padding: 0.45rem 1.6rem 0.45rem 0.6rem; border-radius: 10px;
-      border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--text);
-      font-size: 0.76rem; font-weight: 600; text-overflow: ellipsis;
-    }
-  </style>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=2" />
 </head>
 <body>
 
@@ -376,12 +35,13 @@
   </nav>
 
   <main>
-    <!-- HALAMAN 1: BERANDA RINGKAS -->
+  <!-- HALAMAN 1: BERANDA RINGKAS -->
     <section id="pageHome">
       <div class="welcome-compact">
-        <div>
+        <div style="min-width: 0; flex: 1;">
           <div class="welcome-time" id="greetingTime">Selamat siang,</div>
           <div class="welcome-name" id="greetingName">Memuat...</div>
+          <div class="welcome-subrole" id="greetingRolesText" style="display: none;"></div>
         </div>
         <div class="kdl-pill" id="greetingKdl">
           <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -409,12 +69,40 @@
         </div>
       </div>
 
+      <!-- Daftar Persebaran Daerah -->
       <div class="section-card">
         <div class="section-header-row">
-          <div class="section-title">Sebaran per KDL</div>
+          <div class="section-title" id="breakdownTitle">Sebaran per KDL</div>
           <span style="font-size: 0.72rem; color: var(--muted);">Ketuk untuk buka</span>
         </div>
         <div id="kdlBreakdown"></div>
+      </div>
+
+      <!-- Tombol & Log Export S-13 di Bawah Persebaran Daerah (Khusus 4 Role Tipe 1) -->
+      <div class="s13-feature-card" id="s13FeatureCard" style="display: none;">
+        <div class="s13-card-top">
+          <div class="s13-doc-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="8" y1="13" x2="16" y2="13"/>
+              <line x1="8" y1="17" x2="16" y2="17"/>
+              <line x1="8" y1="9" x2="10" y2="9"/>
+            </svg>
+          </div>
+          <div style="min-width: 0; flex: 1;">
+            <div style="font-size: 0.94rem; font-weight: 700;">Catatan Daerah Tugas (S-13)</div>
+            <div style="font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem;">Cetak formulir tabel resmi siap arsip per tahun dinas</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="openS13ModalBtn" type="button">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Buat & Download PDF S-13</span>
+        </button>
+        <div class="s13-last-log" id="s13LastLogBar">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span id="s13LastLogText">Belum ada riwayat generate S-13.</span>
+        </div>
       </div>
     </section>
 
@@ -422,16 +110,18 @@
     <section id="pageTerritories" style="display: none;">
       <div class="filter-strip" id="filterStrip">
         <button class="pill-btn active" data-filter="ALL">Semua (<span id="cAll">0</span>)</button>
-        <button class="pill-btn" data-filter="KDL Pemalang">Pemalang (<span id="cPml">0</span>)</button>
-        <button class="pill-btn" data-filter="KDL Tegal Timur">Tegal Timur (<span id="cTgt">0</span>)</button>
-        <button class="pill-btn" data-filter="KDL Tegal Barat">Tegal Barat (<span id="cTgb">0</span>)</button>
+        <button class="pill-btn" data-filter="KDL Pemalang" id="pillPml">Pemalang (<span id="cPml">0</span>)</button>
+        <button class="pill-btn" data-filter="KDL Tegal Timur" id="pillTgt">Tegal Timur (<span id="cTgt">0</span>)</button>
+        <button class="pill-btn" data-filter="KDL Tegal Barat" id="pillTgb">Tegal Barat (<span id="cTgb">0</span>)</button>
+        <button class="pill-btn pw-pill" data-filter="PW">Kunjungan PW (<span id="cPw">0</span>)</button>
+        <button class="pill-btn" data-filter="PERTOKOAN">Pertokoan (<span id="cToko">0</span>)</button>
         <button class="pill-btn due-pill" data-filter="DUE">Audit (<span id="cDue">0</span>)</button>
       </div>
 
       <div class="search-bar-wrap">
         <div class="search-input-box">
           <svg class="ico ico-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="searchInput" placeholder="Cari nomor / nama daerah...">
+          <input type="text" id="searchInput" placeholder="Cari nomor / nama / tipe daerah...">
         </div>
         <button class="btn-bulk-icon" id="toggleBulkBtn" title="Pilih Banyak">
           <svg class="ico ico-sm" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -454,8 +144,8 @@
       <div class="section-card">
         <div class="section-header-row">
           <div>
-            <div class="section-title">Tim & Pembagian KDL</div>
-            <div style="font-size: 0.74rem; color: var(--muted); margin-top: 0.1rem;">Kelola akses koordinator & asisten</div>
+            <div class="section-title">Tim & Pembagian Peran</div>
+            <div style="font-size: 0.74rem; color: var(--muted); margin-top: 0.1rem;">Ketuk anggota untuk ubah profil & peran</div>
           </div>
           <button class="btn-sm" style="background: var(--primary); color: #fff; border: none;" id="openAddMemberBtn">+ Tambah</button>
         </div>
@@ -468,11 +158,23 @@
   <div class="bulk-action-bar" id="bulkActionBar">
     <span style="font-size: 0.8rem; font-weight: 700;"><span id="selectedCount">0</span> dipilih</span>
     <div style="display: flex; gap: 0.4rem; align-items: center;">
-      <select id="bulkTargetKdl">
-        <option value="KDL Pemalang">KDL Pemalang</option>
-        <option value="KDL Tegal Timur">KDL Tegal Timur</option>
-        <option value="KDL Tegal Barat">KDL Tegal Barat</option>
-        <option value="">Kosongkan KDL</option>
+      <select id="bulkTargetAction">
+        <optgroup label="Pindah Wilayah KDL">
+          <option value="kdl:KDL Pemalang">KDL Pemalang</option>
+          <option value="kdl:KDL Tegal Timur">KDL Tegal Timur</option>
+          <option value="kdl:KDL Tegal Barat">KDL Tegal Barat</option>
+          <option value="kdl:">Kosongkan KDL</option>
+        </optgroup>
+        <optgroup label="Kunjungan Pengawas Wilayah">
+          <option value="pw:true">Tandai Kunjungan PW</option>
+          <option value="pw:false">Hapus Kunjungan PW</option>
+        </optgroup>
+        <optgroup label="Tipe Daerah">
+          <option value="cat:Umum">Tipe: Umum</option>
+          <option value="cat:Pertokoan">Tipe: Pertokoan</option>
+          <option value="cat:Perumahan">Tipe: Perumahan</option>
+          <option value="cat:Kampung / Desa">Tipe: Kampung / Desa</option>
+        </optgroup>
       </select>
       <button class="btn-sm" style="background: var(--primary); color: #fff; border: none;" id="applyBulkBtn">Simpan</button>
     </div>
@@ -515,22 +217,118 @@
         <input type="email" id="newMemberEmail" placeholder="budi@gmail.com">
       </div>
       <div class="field">
-        <label>Peran</label>
-        <select id="newMemberRole">
-          <option value="asisten">Asisten Hamba Daerah</option>
-          <option value="hamba_daerah">Hamba Daerah (Admin)</option>
+        <label>Peran Daerah (Tipe 1 — Akses Semua KDL)</label>
+        <select id="newMemberRoleDaerah">
+          <option value="">Tidak ada</option>
+          <option value="hamba_daerah">Hamba Daerah</option>
+          <option value="asisten_hamba_daerah">Asisten Hamba Daerah</option>
+          <option value="pengawas_dinas">Pengawas Dinas</option>
+          <option value="koordinator_badan_penatua">Koordinator Badan Penatua</option>
         </select>
       </div>
       <div class="field">
-        <label>Wilayah KDL</label>
+        <label>Penempatan KDL (Tipe 2 — Maksimal 1 KDL)</label>
         <select id="newMemberKdl">
-          <option value="Semua KDL">Semua KDL (3 Wilayah)</option>
+          <option value="">Tidak ditempatkan di KDL</option>
           <option value="KDL Pemalang">KDL Pemalang</option>
           <option value="KDL Tegal Timur">KDL Tegal Timur</option>
           <option value="KDL Tegal Barat">KDL Tegal Barat</option>
         </select>
       </div>
+      <div class="field">
+        <label>Jabatan di KDL (Opsional)</label>
+        <select id="newMemberRoleKdl" disabled>
+          <option value="">Anggota (Lihat Saja / View-Only)</option>
+          <option value="pengawas_kelompok">Pengawas Kelompok</option>
+          <option value="hamba_kelompok">Hamba Kelompok</option>
+          <option value="asisten_pengawas_kelompok">Asisten Pengawas Kelompok</option>
+        </select>
+      </div>
       <button class="btn btn-primary" id="addMemberBtn">Simpan Anggota</button>
+    </div>
+  </div>
+
+  <!-- Modal Edit Anggota -->
+  <div class="modal-backdrop" id="editMemberModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h3 style="font-size: 1.05rem;">Edit Profil & Peran</h3>
+          <p id="editMemberEmailSub" style="font-size: 0.76rem; color: var(--muted); margin-top: 0.15rem;">email@gmail.com</p>
+        </div>
+        <button class="close-btn" id="closeEditMemberBtn">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="field">
+        <label>Nama Panggilan</label>
+        <input type="text" id="editMemberName" placeholder="Nama panggilan">
+      </div>
+      <div class="field" id="editRoleDaerahField">
+        <label>Peran Daerah (Tipe 1 — Akses Semua KDL)</label>
+        <select id="editMemberRoleDaerah">
+          <option value="">Tidak ada</option>
+          <option value="hamba_daerah">Hamba Daerah</option>
+          <option value="asisten_hamba_daerah">Asisten Hamba Daerah</option>
+          <option value="pengawas_dinas">Pengawas Dinas</option>
+          <option value="koordinator_badan_penatua">Koordinator Badan Penatua</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Penempatan KDL (Tipe 2 — Maksimal 1 KDL)</label>
+        <select id="editMemberKdl">
+          <option value="">Tidak ditempatkan di KDL</option>
+          <option value="KDL Pemalang">KDL Pemalang</option>
+          <option value="KDL Tegal Timur">KDL Tegal Timur</option>
+          <option value="KDL Tegal Barat">KDL Tegal Barat</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Jabatan di KDL (Opsional)</label>
+        <select id="editMemberRoleKdl" disabled>
+          <option value="">Anggota (Lihat Saja / View-Only)</option>
+          <option value="pengawas_kelompok">Pengawas Kelompok</option>
+          <option value="hamba_kelompok">Hamba Kelompok</option>
+          <option value="asisten_pengawas_kelompok">Asisten Pengawas Kelompok</option>
+        </select>
+      </div>
+      <div class="btn-group" style="margin-bottom: 0;">
+        <button class="btn btn-primary" id="saveEditMemberBtn">Simpan Perubahan</button>
+        <button type="button" class="btn-danger-outline" id="deleteEditMemberBtn">Hapus Anggota</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Export PDF S-13 -->
+  <div class="modal-backdrop" id="s13Modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h3 style="font-size: 1.05rem;">Export Catatan Daerah (S-13)</h3>
+          <p style="font-size: 0.76rem; color: var(--muted); margin-top: 0.15rem;">Cetak formulir resmi periode 1 Sept – 31 Agt</p>
+        </div>
+        <button class="close-btn" id="closeS13ModalBtn">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="field">
+        <label>Tahun Dinas</label>
+        <select id="s13YearSelect">
+          <option value="2026">Tahun Dinas 2026 (1 Sept 2025 – 31 Agt 2026)</option>
+          <option value="2027" selected>Tahun Dinas 2027 (1 Sept 2026 – 31 Agt 2027)</option>
+          <option value="2028">Tahun Dinas 2028 (1 Sept 2027 – 31 Agt 2028)</option>
+        </select>
+      </div>
+      <div class="field" id="s13KdlField">
+        <label>Cakupan Wilayah</label>
+        <select id="s13KdlSelect">
+          <option value="ALL">Semua KDL (Lengkap)</option>
+          <option value="KDL Pemalang">KDL Pemalang</option>
+          <option value="KDL Tegal Timur">KDL Tegal Timur</option>
+          <option value="KDL Tegal Barat">KDL Tegal Barat</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="downloadS13Btn">Download PDF S-13</button>
     </div>
   </div>
 
@@ -538,7 +336,13 @@
   <div class="modal-backdrop" id="detailModal">
     <div class="modal">
       <div class="modal-header">
-        <h2 style="font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="mNama">Area #252</h2>
+        <div style="min-width: 0; flex: 1;">
+          <div style="display: flex; align-items: center; gap: 0.4rem;">
+            <h2 style="font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="mNama">Area #252</h2>
+            <span class="pw-tag" id="mPwBadge" style="display: none;">Kunjungan PW</span>
+          </div>
+          <div style="font-size: 0.74rem; color: var(--muted); margin-top: 0.1rem;" id="mMetaSub">Pemalang • Umum</div>
+        </div>
         <button class="close-btn" id="closeModalBtn" aria-label="Tutup">
           <svg class="ico ico-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -546,9 +350,18 @@
 
       <div id="mapContainer"></div>
 
+      <div class="viewonly-notice" id="viewOnlyNotice">
+        Mode lihat saja (View-Only). Hubungi Pengawas/Hamba Kelompok KDL untuk mengubah status peta.
+      </div>
+
       <div class="field">
         <label>Pemegang / Yang Mengerjakan</label>
         <input type="text" id="fPemegang" placeholder="Kosongkan jika tersedia">
+        <div class="quick-chips" id="kdlQuickChips">
+          <button type="button" class="chip-btn" onclick="fillHolderKdl('KDL Pemalang')">+ KDL Pemalang</button>
+          <button type="button" class="chip-btn" onclick="fillHolderKdl('KDL Tegal Timur')">+ KDL Tegal Timur</button>
+          <button type="button" class="chip-btn" onclick="fillHolderKdl('KDL Tegal Barat')">+ KDL Tegal Barat</button>
+        </div>
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.9rem;">
@@ -562,8 +375,50 @@
         </div>
       </div>
 
+      <!-- Panel Ubah Detail & Atribut Peta -->
+      <div class="attr-panel" id="attrPanel">
+        <div class="attr-toggle-row" id="toggleAttrBtn">
+          <span>Edit Info & Atribut Peta</span>
+          <svg class="ico ico-sm" id="attrChevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="attr-body" id="attrBody">
+          <div class="field">
+            <label>Nama Daerah</label>
+            <input type="text" id="fNamaDaerah" placeholder="Contoh: 252 - Jl. Werkudoro">
+          </div>
+          <div class="field">
+            <label>Link Google My Maps (Opsional)</label>
+            <input type="url" id="fMyMapsUrl" placeholder="https://www.google.com/maps/d/...">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.7rem;">
+            <div class="field" style="margin-bottom: 0;">
+              <label>Tipe Daerah</label>
+              <select id="fKategori">
+                <option value="Umum">Umum</option>
+                <option value="Pertokoan">Pertokoan</option>
+                <option value="Perumahan">Perumahan</option>
+                <option value="Kampung / Desa">Kampung / Desa</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom: 0;" id="fKdlField">
+              <label>Wilayah KDL</label>
+              <select id="fKdlPeta">
+                <option value="">Belum diatur</option>
+                <option value="KDL Pemalang">KDL Pemalang</option>
+                <option value="KDL Tegal Timur">KDL Tegal Timur</option>
+                <option value="KDL Tegal Barat">KDL Tegal Barat</option>
+              </select>
+            </div>
+          </div>
+          <label class="check-row">
+            <input type="checkbox" id="fKunjunganPw">
+            <span>Tandai untuk Kunjungan Pengawas Wilayah</span>
+          </label>
+        </div>
+      </div>
+
       <div class="btn-group">
-        <div class="action-row-2">
+        <div class="action-row-2" id="primaryActionRow">
           <button class="btn btn-primary" id="saveBtn">Simpan</button>
           <button class="btn btn-wa" id="shareWaBtn" type="button">
             <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
@@ -608,617 +463,8 @@
     });
   </script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-    import { getDatabase, ref, onValue, update, push, set, remove, get } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCzX0UOkVwvRkUuGBWVcec92AWj2tjQeoE",
-      authDomain: "territory-assistant-40a9b.firebaseapp.com",
-      databaseURL: "https://territory-assistant-40a9b-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "territory-assistant-40a9b",
-      storageBucket: "territory-assistant-40a9b.firebasestorage.app",
-      messagingSenderId: "729411479743",
-      appId: "1:729411479743:web:bc19a775993ff6bf897e0a"
-    };
-
-    const SUPER_ADMIN = "edenpemalang@gmail.com";
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app, "https://territory-assistant-40a9b-default-rtdb.asia-southeast1.firebasedatabase.app");
-
-    let currentUser = null;
-    let currentProfile = { name: "Eden", role: "hamba_daerah", kdl: "Semua KDL" };
-    let isHambaDaerah = false;
-    let allTerritories = {};
-    let allMembers = {};
-    let activeFilter = "ALL";
-    let statusQuickFilter = "";
-    let selectedId = null;
-    let editHistoryMode = false;
-    let bulkMode = false;
-    let selectedBulkIds = new Set();
-    let map = null;
-    let currentPolygon = null;
-
-    function emailToKey(email) {
-      return email.toLowerCase().trim().replace(/\./g, ",");
-    }
-
-    function getTimeGreeting() {
-      const h = new Date().getHours();
-      if (h < 11) return "Selamat pagi,";
-      if (h < 15) return "Selamat siang,";
-      if (h < 18) return "Selamat sore,";
-      return "Selamat malam,";
-    }
-
-    function cleanTerritoryName(t) {
-      return String(t.nama ?? "").trim() || `Daerah ${t.nomor || ""}`;
-    }
-
-    function formatShortKdl(kdl) {
-      return (kdl || "Belum diatur").replace(/^KDL\s+/i, "");
-    }
-
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = "index.html";
-        return;
-      }
-      currentUser = user;
-      const userEmail = user.email.toLowerCase();
-      const userKey = emailToKey(userEmail);
-
-      const snap = await get(ref(db, `users/${userKey}`));
-      if (!snap.exists()) {
-        if (userEmail === SUPER_ADMIN) {
-          currentProfile = { email: userEmail, name: "Eden", role: "hamba_daerah", kdl: "Semua KDL" };
-          await set(ref(db, `users/${userKey}`), currentProfile);
-        } else {
-          alert("Maaf, email Anda (" + user.email + ") belum terdaftar. Hubungi Hamba Daerah.");
-          await signOut(auth);
-          window.location.href = "index.html";
-          return;
-        }
-      } else {
-        currentProfile = snap.val();
-      }
-
-      isHambaDaerah = (userEmail === SUPER_ADMIN || currentProfile.role === "hamba_daerah");
-
-      document.body.style.display = "flex";
-      document.getElementById("greetingTime").textContent = getTimeGreeting();
-      document.getElementById("greetingName").textContent = currentProfile.name || user.email.split("@")[0];
-      document.getElementById("greetingKdlText").textContent = currentProfile.kdl || "Semua KDL";
-
-      if (isHambaDaerah) {
-        document.getElementById("bnavMembers").style.display = "flex";
-        document.getElementById("toggleBulkBtn").style.display = "inline-flex";
-      }
-
-      listenMembers();
-      listenTerritories();
-    });
-
-    function isMyTerritory(t) {
-      if (isHambaDaerah || currentProfile.kdl === "Semua KDL") return true;
-      return (t.kdl || "") === currentProfile.kdl;
-    }
-
-    function addFourMonths(dateStr) {
-      if (!dateStr) return "";
-      const d = new Date(dateStr);
-      d.setMonth(d.getMonth() + 4);
-      return d.toISOString().split("T")[0];
-    }
-
-    function isAuditDue(t) {
-      if (!t.pemegang || !t.jatuh_tempo_audit) return false;
-      const today = new Date().toISOString().split("T")[0];
-      return t.jatuh_tempo_audit <= today;
-    }
-
-    function listenMembers() {
-      onValue(ref(db, "users"), (snap) => {
-        allMembers = snap.val() || {};
-        renderMembers();
-      });
-    }
-
-    function renderMembers() {
-      const listEl = document.getElementById("memberList");
-      const membersArr = Object.values(allMembers);
-
-      listEl.innerHTML = membersArr.map(m => {
-        const isSuper = m.email === SUPER_ADMIN;
-        const roleLabel = m.role === "hamba_daerah" ? "Hamba Daerah" : "Asisten";
-        const currentRole = m.role || "asisten";
-        const currentKdl = m.kdl || "Semua KDL";
-
-        return `
-          <div class="member-row">
-            <div class="member-top">
-              <div style="min-width:0; flex:1;">
-                <strong>${m.name || m.email}</strong> <span class="role-tag">${roleLabel}</span>
-                <div style="font-size:0.73rem; color:var(--muted); overflow:hidden; text-overflow:ellipsis; margin-top:0.15rem;">${m.email}</div>
-              </div>
-              ${!isSuper
-                ? `<button class="btn-sm btn-logout" onclick="removeMember('${m.email}')">Hapus</button>`
-                : '<span style="font-size:0.72rem; color:var(--muted); font-weight:600;">Utama</span>'}
-            </div>
-            ${!isSuper ? `
-              <div class="member-controls">
-                <select aria-label="Peran ${m.name || m.email}" onchange="updateMemberRole('${m.email}', this.value)">
-                  <option value="asisten" ${currentRole === "asisten" ? "selected" : ""}>Asisten</option>
-                  <option value="hamba_daerah" ${currentRole === "hamba_daerah" ? "selected" : ""}>Hamba Daerah</option>
-                </select>
-                <select aria-label="KDL ${m.name || m.email}" onchange="updateMemberKdl('${m.email}', this.value)">
-                  <option value="Semua KDL" ${currentKdl === "Semua KDL" ? "selected" : ""}>Semua KDL</option>
-                  <option value="KDL Pemalang" ${currentKdl === "KDL Pemalang" ? "selected" : ""}>Pemalang</option>
-                  <option value="KDL Tegal Timur" ${currentKdl === "KDL Tegal Timur" ? "selected" : ""}>Tegal Timur</option>
-                  <option value="KDL Tegal Barat" ${currentKdl === "KDL Tegal Barat" ? "selected" : ""}>Tegal Barat</option>
-                </select>
-              </div>
-            ` : ''}
-          </div>
-        `;
-      }).join("");
-    }
-
-    window.updateMemberRole = async function(email, newRole) {
-      if (!isHambaDaerah || email === SUPER_ADMIN) return;
-      await update(ref(db, `users/${emailToKey(email)}`), { role: newRole });
-    };
-
-    window.updateMemberKdl = async function(email, newKdl) {
-      if (!isHambaDaerah || email === SUPER_ADMIN) return;
-      await update(ref(db, `users/${emailToKey(email)}`), { kdl: newKdl });
-    };
-
-    document.getElementById("openAddMemberBtn").addEventListener("click", () => {
-      document.getElementById("addMemberModal").style.display = "flex";
-    });
-    document.getElementById("closeAddMemberBtn").addEventListener("click", () => {
-      document.getElementById("addMemberModal").style.display = "none";
-    });
-
-    document.getElementById("addMemberBtn").addEventListener("click", async () => {
-      const email = document.getElementById("newMemberEmail").value.trim().toLowerCase();
-      const name = document.getElementById("newMemberName").value.trim();
-      const role = document.getElementById("newMemberRole").value;
-      const kdl = document.getElementById("newMemberKdl").value;
-      if (!email) return alert("Masukkan alamat email anggota.");
-
-      await set(ref(db, `users/${emailToKey(email)}`), { email, name: name || email.split("@")[0], role, kdl });
-      document.getElementById("newMemberEmail").value = "";
-      document.getElementById("newMemberName").value = "";
-      document.getElementById("addMemberModal").style.display = "none";
-    });
-
-    window.removeMember = async function(email) {
-      if (!confirm(`Hapus akses untuk ${email}?`)) return;
-      await remove(ref(db, `users/${emailToKey(email)}`));
-    };
-
-    function listenTerritories() {
-      onValue(ref(db, "territories"), (snap) => {
-        allTerritories = snap.val() || {};
-        renderHomeOverview();
-        renderList();
-        if (selectedId && allTerritories[selectedId] && document.getElementById("detailModal").style.display === "flex") {
-          renderHistoryList(allTerritories[selectedId]);
-        }
-      });
-    }
-
-    function renderHomeOverview() {
-      const list = Object.values(allTerritories);
-      const mineList = list.filter(t => isMyTerritory(t));
-      const workingCount = mineList.filter(t => t.pemegang && t.pemegang.trim() !== "").length;
-      const availCount = mineList.length - workingCount;
-      const dueCount = mineList.filter(t => isAuditDue(t)).length;
-
-      document.getElementById("ovTotal").textContent = mineList.length;
-      document.getElementById("ovWork").textContent = workingCount;
-      document.getElementById("ovAvail").textContent = availCount;
-
-      const alertEl = document.getElementById("homeAuditAlert");
-      if (dueCount > 0) {
-        alertEl.style.display = "flex";
-        document.getElementById("alertDueCount").textContent = dueCount;
-      } else {
-        alertEl.style.display = "none";
-      }
-
-      const kdls = ["KDL Pemalang", "KDL Tegal Timur", "KDL Tegal Barat"];
-      const unassigned = list.filter(t => !t.kdl).length;
-      let html = kdls.map(k => {
-        const sub = list.filter(t => t.kdl === k);
-        const active = sub.filter(t => t.pemegang && t.pemegang.trim() !== "").length;
-        const pct = sub.length > 0 ? Math.round((active / sub.length) * 100) : 0;
-        return `
-          <div class="kdl-summary-row" onclick="openFilteredList('${k}')">
-            <div class="kdl-row-top">
-              <strong>${formatShortKdl(k)}</strong>
-              <span style="color:var(--muted); font-size:0.78rem;">${active} / ${sub.length} peta</span>
-            </div>
-            <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
-          </div>`;
-      }).join("");
-
-      if (unassigned > 0) {
-        html += `
-          <div class="kdl-summary-row" onclick="openFilteredList('UNASSIGNED')">
-            <div class="kdl-row-top">
-              <span style="color:var(--warning); font-weight:600;">Belum Masuk KDL</span>
-              <span style="color:var(--muted); font-size:0.78rem;">${unassigned} peta</span>
-            </div>
-          </div>`;
-      }
-      document.getElementById("kdlBreakdown").innerHTML = html;
-    }
-
-    function getVisibleTerritories() {
-      const list = Object.values(allTerritories).filter(t => isMyTerritory(t));
-      const search = document.getElementById("searchInput").value.toLowerCase();
-
-      return list
-        .filter(t => {
-          const isWorking = t.pemegang && t.pemegang.trim() !== "";
-          if (statusQuickFilter === "avail" && isWorking) return false;
-          if (statusQuickFilter === "work" && !isWorking) return false;
-
-          if (activeFilter === "DUE" && !isAuditDue(t)) return false;
-          if (activeFilter === "UNASSIGNED" && t.kdl) return false;
-          if (activeFilter.startsWith("KDL ") && t.kdl !== activeFilter) return false;
-
-          if (search) {
-            const hay = `${t.nomor} ${t.nama} ${t.pemegang} ${t.kdl || ''}`.toLowerCase();
-            if (!hay.includes(search)) return false;
-          }
-          return true;
-        })
-        .sort((a, b) => {
-          const numA = parseInt(a.nomor, 10);
-          const numB = parseInt(b.nomor, 10);
-          if (!isNaN(numA) && !isNaN(numB) && numA !== numB) return numA - numB;
-          return String(a.nomor ?? "").localeCompare(String(b.nomor ?? ""), "id", { numeric: true });
-        });
-    }
-
-    function renderList() {
-      const mineList = Object.values(allTerritories).filter(t => isMyTerritory(t));
-      document.getElementById("cAll").textContent = mineList.length;
-      document.getElementById("cPml").textContent = mineList.filter(t => t.kdl === "KDL Pemalang").length;
-      document.getElementById("cTgt").textContent = mineList.filter(t => t.kdl === "KDL Tegal Timur").length;
-      document.getElementById("cTgb").textContent = mineList.filter(t => t.kdl === "KDL Tegal Barat").length;
-      document.getElementById("cDue").textContent = mineList.filter(t => isAuditDue(t)).length;
-
-      const filtered = getVisibleTerritories();
-      const container = document.getElementById("territoryList");
-      if (filtered.length === 0) {
-        container.innerHTML = `<div style="padding: 1.75rem; text-align: center; color: var(--muted); font-size: 0.84rem;">Tidak ada peta ditemukan.</div>`;
-        return;
-      }
-
-      container.innerHTML = filtered.map(t => {
-        const due = isAuditDue(t);
-        const isWorking = t.pemegang && t.pemegang.trim() !== "";
-        let badge = `<span class="badge b-avail">Kosong</span>`;
-        if (due) badge = `<span class="badge b-due">Audit</span>`;
-        else if (isWorking) badge = `<span class="badge b-work">Aktif</span>`;
-
-        const kdlLabel = formatShortKdl(t.kdl);
-        const subText = isWorking
-          ? `${t.pemegang} • ${kdlLabel}`
-          : `${kdlLabel} • ${t.kategori || 'Umum'}`;
-
-        const checked = selectedBulkIds.has(t.id) ? "checked" : "";
-
-        return `
-          <div class="list-item ${due ? 'is-due' : ''}" onclick="handleItemClick('${t.id}')">
-            <input type="checkbox" class="bulk-check" style="display:${bulkMode ? 'block' : 'none'};" ${checked} onclick="event.stopPropagation(); toggleBulkItem('${t.id}')">
-            <div class="item-left">
-              <span class="item-num">#${t.nomor}</span>
-              <div class="item-info">
-                <div class="item-title">${cleanTerritoryName(t)}</div>
-                <div class="item-sub">${subText}</div>
-              </div>
-            </div>
-            ${badge}
-          </div>
-        `;
-      }).join("");
-    }
-
-    window.handleItemClick = function(id) {
-      if (bulkMode) {
-        toggleBulkItem(id);
-        renderList();
-      } else {
-        openDetail(id);
-      }
-    };
-
-    window.toggleBulkItem = function(id) {
-      if (selectedBulkIds.has(id)) selectedBulkIds.delete(id);
-      else selectedBulkIds.add(id);
-      document.getElementById("selectedCount").textContent = selectedBulkIds.size;
-      document.getElementById("bulkActionBar").style.display = selectedBulkIds.size > 0 ? "flex" : "none";
-    };
-
-    document.getElementById("toggleBulkBtn").addEventListener("click", () => {
-      bulkMode = !bulkMode;
-      selectedBulkIds.clear();
-      const btn = document.getElementById("toggleBulkBtn");
-      btn.classList.toggle("active", bulkMode);
-      btn.querySelector("span").textContent = bulkMode ? "Batal" : "Pilih";
-      document.getElementById("bulkSubbar").style.display = bulkMode ? "flex" : "none";
-      document.getElementById("bulkActionBar").style.display = "none";
-      renderList();
-    });
-
-    document.getElementById("selectAllVisibleBtn").addEventListener("click", () => {
-      const visible = getVisibleTerritories();
-      visible.forEach(t => selectedBulkIds.add(t.id));
-      document.getElementById("selectedCount").textContent = selectedBulkIds.size;
-      document.getElementById("bulkActionBar").style.display = selectedBulkIds.size > 0 ? "flex" : "none";
-      renderList();
-    });
-
-    document.getElementById("applyBulkBtn").addEventListener("click", async () => {
-      if (selectedBulkIds.size === 0) return;
-      const targetKdl = document.getElementById("bulkTargetKdl").value;
-      const updates = {};
-      selectedBulkIds.forEach(id => {
-        updates[`territories/${id}/kdl`] = targetKdl;
-      });
-      await update(ref(db), updates);
-      bulkMode = false;
-      selectedBulkIds.clear();
-      const btn = document.getElementById("toggleBulkBtn");
-      btn.classList.remove("active");
-      btn.querySelector("span").textContent = "Pilih";
-      document.getElementById("bulkSubbar").style.display = "none";
-      document.getElementById("bulkActionBar").style.display = "none";
-      renderList();
-    });
-
-    window.switchPage = function(pageId) {
-      ["pageHome", "pageTerritories", "pageMembers"].forEach(p => {
-        document.getElementById(p).style.display = p === pageId ? "block" : "none";
-      });
-      document.querySelectorAll(".bnav-btn").forEach(b => {
-        b.classList.toggle("active", b.dataset.page === pageId);
-      });
-      const titles = { pageHome: "Terita", pageTerritories: "Daftar Peta", pageMembers: "Anggota" };
-      document.getElementById("headerTitle").textContent = titles[pageId] || "Terita";
-
-      if (pageId !== "pageTerritories") {
-        document.getElementById("bulkActionBar").style.display = "none";
-      }
-    };
-
-    window.openFilteredList = function(filterVal, statusFilter = "") {
-      activeFilter = filterVal;
-      statusQuickFilter = statusFilter;
-      document.querySelectorAll(".pill-btn").forEach(b => {
-        b.classList.toggle("active", b.dataset.filter === filterVal);
-      });
-      switchPage("pageTerritories");
-      renderList();
-    };
-
-    document.querySelectorAll(".bnav-btn").forEach(btn => {
-      btn.addEventListener("click", () => switchPage(btn.dataset.page));
-    });
-
-    function closeModal() {
-      document.getElementById("detailModal").style.display = "none";
-      document.documentElement.style.overflow = "";
-      document.body.style.overflow = "";
-    }
-
-    function renderHistoryList(t) {
-      const histEl = document.getElementById("historyList");
-      const toggleBtn = document.getElementById("toggleEditHistoryBtn");
-      const entries = t.riwayat ? Object.entries(t.riwayat).reverse() : [];
-
-      if (entries.length === 0) {
-        toggleBtn.style.display = "none";
-        histEl.innerHTML = `<div style="font-size:0.78rem; color:var(--muted);">Belum ada riwayat sebelumnya.</div>`;
-        return;
-      }
-
-      toggleBtn.style.display = isHambaDaerah ? "inline-flex" : "none";
-      toggleBtn.textContent = editHistoryMode ? "Selesai Kelola" : "Kelola Riwayat";
-      toggleBtn.style.color = editHistoryMode ? "var(--primary)" : "var(--text)";
-
-      histEl.innerHTML = entries.map(([histKey, r]) => `
-        <div class="hist-item">
-          <div style="min-width: 0; flex: 1;">
-            <strong>${r.pemegang}</strong>
-            <div style="color:var(--muted); font-size:0.72rem;">${r.keterangan || ''}</div>
-          </div>
-          <div style="text-align:right; font-size:0.72rem; color:var(--muted); flex-shrink: 0;">
-            ${r.tanggal_mulai || '-'}<br>s/d ${r.tanggal_kembali || '-'}
-          </div>
-          ${editHistoryMode ? `
-            <button type="button" class="btn-sm btn-logout" style="padding: 0.3rem 0.5rem; margin-left: 0.35rem;" onclick="deleteHistoryItem('${histKey}', '${(r.pemegang || '').replace(/'/g, "\\'")}')">
-              Hapus
-            </button>
-          ` : ''}
-        </div>
-      `).join("");
-    }
-
-    document.getElementById("toggleEditHistoryBtn").addEventListener("click", () => {
-      if (!selectedId || !allTerritories[selectedId]) return;
-      editHistoryMode = !editHistoryMode;
-      renderHistoryList(allTerritories[selectedId]);
-    });
-
-    window.deleteHistoryItem = async function(histKey, pemegangName) {
-      if (!selectedId || !isHambaDaerah) return;
-      const yakin = confirm(`Hapus permanen catatan riwayat atas nama "${pemegangName}"? Tindakan ini tidak bisa dibatalkan.`);
-      if (!yakin) return;
-
-      await remove(ref(db, `territories/${selectedId}/riwayat/${histKey}`));
-    };
-
-    window.openDetail = function(id) {
-      selectedId = id;
-      editHistoryMode = false;
-      const t = allTerritories[id];
-      if (!t) return;
-
-      document.getElementById("mNama").textContent = cleanTerritoryName(t);
-      document.getElementById("fPemegang").value = t.pemegang || "";
-      document.getElementById("fTglMulai").value = t.tanggal_mulai || "";
-      document.getElementById("fCatatan").value = t.catatan || "";
-
-      const hasHolder = t.pemegang && t.pemegang.trim() !== "";
-      document.getElementById("holderActionRow").style.display = hasHolder ? "grid" : "none";
-
-      renderHistoryList(t);
-
-      const modalEl = document.querySelector("#detailModal .modal");
-      document.getElementById("detailModal").style.display = "flex";
-      document.documentElement.style.overflow = "hidden";
-      document.body.style.overflow = "hidden";
-      if (modalEl) modalEl.scrollTop = 0;
-
-      setTimeout(() => {
-        if (!map) {
-          map = L.map("mapContainer").setView([-6.89, 109.38], 13);
-          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OSM" }).addTo(map);
-        }
-        map.invalidateSize();
-        if (currentPolygon) map.removeLayer(currentPolygon);
-        if (t.koordinat && t.koordinat.length > 0) {
-          currentPolygon = L.polygon(t.koordinat, { color: "#2563eb", fillOpacity: 0.25 }).addTo(map);
-          map.fitBounds(currentPolygon.getBounds());
-        }
-      }, 150);
-    };
-
-    document.getElementById("saveBtn").addEventListener("click", async () => {
-      if (!selectedId) return;
-      const t = allTerritories[selectedId];
-      const pemegang = document.getElementById("fPemegang").value.trim();
-      const tglMulai = document.getElementById("fTglMulai").value;
-      let jatuhTempo = "";
-      if (pemegang && tglMulai) {
-        jatuhTempo = (tglMulai === t.tanggal_mulai && t.jatuh_tempo_audit) ? t.jatuh_tempo_audit : addFourMonths(tglMulai);
-      }
-
-      const payload = {
-        pemegang,
-        status: pemegang ? "Sedang Dikerjakan" : "Tersedia",
-        tanggal_mulai: tglMulai,
-        jatuh_tempo_audit: jatuhTempo,
-        catatan: document.getElementById("fCatatan").value.trim()
-      };
-
-      await update(ref(db, `territories/${selectedId}`), payload);
-      closeModal();
-    });
-
-    document.getElementById("shareWaBtn").addEventListener("click", () => {
-      if (!selectedId) return;
-      const t = allTerritories[selectedId];
-      if (!t) return;
-
-      const namaPeta = cleanTerritoryName(t);
-      const pemegangVal = document.getElementById("fPemegang").value.trim();
-      const tglMulaiVal = document.getElementById("fTglMulai").value;
-      const catatanVal = document.getElementById("fCatatan").value.trim();
-
-      let mapsLink = "";
-      if (t.koordinat && t.koordinat.length > 0) {
-        const center = L.polygon(t.koordinat).getBounds().getCenter();
-        mapsLink = `📍 Lokasi Maps: https://maps.google.com/?q=${center.lat.toFixed(6)},${center.lng.toFixed(6)}`;
-      }
-
-      const lines = [
-        `*PETA DAERAH — ${namaPeta.toUpperCase()}*`,
-        pemegangVal ? `• Pemegang: ${pemegangVal}` : `• Status: Tersedia`,
-        tglMulaiVal ? `• Mulai: ${tglMulaiVal}` : null,
-        catatanVal ? `• Catatan: ${catatanVal}` : null,
-        mapsLink
-      ].filter(Boolean);
-
-      const waUrl = `https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`;
-      window.open(waUrl, "_blank");
-    });
-
-    document.getElementById("auditContinueBtn").addEventListener("click", async () => {
-      if (!selectedId) return;
-      const pemegang = document.getElementById("fPemegang").value.trim();
-      if (!pemegang) return;
-      const today = new Date().toISOString().split("T")[0];
-      const nextDue = addFourMonths(today);
-
-      await push(ref(db, `territories/${selectedId}/riwayat`), {
-        pemegang,
-        tanggal_mulai: document.getElementById("fTglMulai").value || today,
-        keterangan: `Audit 4 Bln (${today}): Lanjut`,
-        tanggal_kembali: "Masih berjalan"
-      });
-      await update(ref(db, `territories/${selectedId}`), { jatuh_tempo_audit: nextDue });
-      openDetail(selectedId);
-    });
-
-    document.getElementById("finishBtn").addEventListener("click", async () => {
-      if (!selectedId) return;
-      const pemegang = document.getElementById("fPemegang").value.trim();
-      if (!pemegang) return;
-      const today = new Date().toISOString().split("T")[0];
-
-      await push(ref(db, `territories/${selectedId}/riwayat`), {
-        pemegang,
-        tanggal_mulai: document.getElementById("fTglMulai").value || today,
-        keterangan: "Selesai & Dikembalikan",
-        tanggal_kembali: today
-      });
-      await update(ref(db, `territories/${selectedId}`), {
-        pemegang: "", status: "Tersedia", tanggal_mulai: "", jatuh_tempo_audit: "", catatan: ""
-      });
-      openDetail(selectedId);
-    });
-
-    document.querySelectorAll(".pill-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".pill-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        activeFilter = btn.dataset.filter;
-        statusQuickFilter = "";
-        renderList();
-      });
-    });
-
-    document.getElementById("closeModalBtn").addEventListener("click", closeModal);
-    document.getElementById("searchInput").addEventListener("input", renderList);
-    document.getElementById("logoutBtn").addEventListener("click", async () => { await signOut(auth); window.location.href = "index.html"; });
-
-    const themeToggle = document.getElementById("themeToggle");
-    const themeIcon = document.getElementById("themeIcon");
-    const moonSvg = `<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>`;
-    const sunSvg = `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>`;
-
-    const savedTheme = localStorage.getItem("theme") || "light";
-    document.documentElement.setAttribute("data-theme", savedTheme);
-    themeIcon.innerHTML = savedTheme === "dark" ? sunSvg : moonSvg;
-
-    themeToggle.addEventListener("click", () => {
-      const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", next);
-      localStorage.setItem("theme", next);
-      themeIcon.innerHTML = next === "dark" ? sunSvg : moonSvg;
-    });
-  </script>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

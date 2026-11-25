@@ -7,10 +7,10 @@
   <meta name="theme-color" content="#2563eb">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Peta Daerah">
+  <meta name="apple-mobile-web-app-title" content="Terita">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%232563eb'/%3E%3Cpath d='M128 160l85-32 86 32 85-32v224l-85 32-86-32-85 32V160z' fill='none' stroke='%23ffffff' stroke-width='28' stroke-linejoin='round'/%3E%3Cpath d='M213 128v224M299 160v224' stroke='%23ffffff' stroke-width='28'/%3E%3C/svg%3E">
-  <title>Login Portal Peta</title>
+  <title>Login — Terita</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -65,8 +65,8 @@
 <body>
   <div class="card">
     <button class="theme-btn" id="themeToggle">🌙</button>
-    <h1>Portal Peta Daerah</h1>
-    <p class="subtitle">Khusus koordinator & admin terdaftar</p>
+    <h1>Terita</h1>
+    <p class="subtitle">Portal peta daerah terdaftar</p>
     <div class="alert" id="errorBox"></div>
 
     <form id="authForm">
@@ -111,6 +111,9 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({
+      prompt: "select_account"
+    });
 
     onAuthStateChanged(auth, (user) => {
       if (user) window.location.href = "dashboard.html";
@@ -139,7 +142,7 @@
         await signInWithPopup(auth, provider);
         window.location.href = "dashboard.html";
       } catch (err) {
-        showError("Gagal login Google.");
+        showError("Gagal login Google: " + (err.code || "coba lagi"));
       }
     });
 

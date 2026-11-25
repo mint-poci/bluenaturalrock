@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trial Export S-13 — Terita</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #eef2f9; color: #0f172a;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; margin: 0; padding: 1rem;
+    }
+    .card {
+      background: #fff; border-radius: 20px; padding: 1.5rem;
+      max-width: 440px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+    h2 { margin: 0 0 0.4rem; font-size: 1.15rem; }
+    p { margin: 0 0 1.2rem; font-size: 0.84rem; color: #64748b; line-height: 1.5; }
+    .field { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 0.35rem; color: #475569; }
+    select, button {
+      width: 100%; padding: 0.75rem; border-radius: 12px; font-size: 0.9rem; font-weight: 600;
+    }
+    select { border: 1px solid #cbd5e1; background: #f8fafc; }
+    button {
+      background: #2563eb; color: #fff; border: none; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+    }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    #status { margin-top: 0.85rem; font-size: 0.8rem; color: #2563eb; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Trial Generator PDF S-13</h2>
+    <p>Mengambil data asli dari database Terita dan menyusun tabel <strong>CATATAN DAERAH TUGAS</strong> siap cetak.</p>
+
+    <div class="field">
+      <label>Pilih Tahun Dinas (1 Sept – 31 Agt)</label>
+      <select id="serviceYear">
+        <option value="2026">Tahun Dinas 2026 (1 Sept 2025 – 31 Agt 2026)</option>
+        <option value="2027" selected>Tahun Dinas 2027 (1 Sept 2026 – 31 Agt 2027)</option>
+      </select>
+    </div>
+
+    <button id="btnGenerate">Download Contoh PDF S-13</button>
+    <div id="status"></div>
+  </div>
+
+  <script type="module">
+    import { ref, get } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+    import { db } from "./js/firebase-config.js";
+
+    function fmtDDMM(isoStr) {
+      if (!isoStr || !isoStr.includes("-")) return "";
+      const [y, m, d] = isoStr.split("-");
+      return `${d}/${m}`;
+    }
+
+    function fmtDDMMYY(isoStr) {
+      if (!isoStr || !isoStr.includes("-")) return "";
+      const [y, m, d] = isoStr.split("-");
+      return `${d}/${m}/${y.slice(-2)}`;
+    }
+
+    function drawHeader(doc, startY) {
+      const left = 12;
+      const colWidths = [16, 26, 36, 36, 36, 36]; // Total = 186mm (pas di A4 210mm)
+      const h1 = 7;
+      const h2 = 9;
+
+      doc.setDrawColor(0, 0, 0);
+      doc.setTextColor(0, 0, 0);
+      doc.setLineWidth(0.35);
+
+      // Kolom 1: No. daerah
+      doc.setFillColor(217, 217, 217);
+      doc.rect(left, startY, colWidths[0], h1 + h2, "FD");
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.text(["No.", "daerah"], left + colWidths[0] / 2, startY + 6.5, { align: "center" });
+
+      // Kolom 2: Tanggal terakhir dikembalikan*
+      let x = left + colWidths[0];
+      doc.setFillColor(217, 217, 217);
+      doc.rect(x, startY, colWidths[1], h1 + h2, "FD");
+      doc.text(["Tanggal", "terakhir", "dikembalikan*"], x + colWidths[1] / 2, startY + 5, { align: "center" });
+
+      // 4 Blok Dikerjakan oleh
+      x += colWidths[1];
+      for (let i = 0; i < 4; i++) {
+        const w = colWidths[2 + i];
+        const halfW = w / 2;
+
+        doc.setFillColor(217, 217, 217);
+        doc.rect(x, startY, w, h1, "FD");
+        doc.setFontSize(7.5);
+        doc.text("Dikerjakan oleh", x + w / 2, startY + 4.8, { align: "center" });
+
+        doc.setFillColor(217, 217, 217);
+        doc.rect(x, startY + h1, halfW, h2, "FD");
+        doc.setFillColor(217, 217, 217);
+        doc.rect(x + halfW, startY + h1, halfW, h2, "FD");
+        doc.setFontSize(6.5);
+        doc.text(["Tanggal", "diberikan"], x + halfW / 2, startY + h1 + 3.8, { align: "center" });
+        doc.text(["Tanggal", "dikembalikan"], x + halfW + halfW / 2, startY + h1 + 3.8, { align: "center" });
+
+        x += w;
+      }
+      return startY + h1 + h2;
+    }
+
+    function drawRow(doc, y, rowData) {
+      const left = 12;
+      const colWidths = [16, 26, 36, 36, 36, 36];
+      const topH = 5.2;
+      const botH = 4.8;
+      const totalH = topH + botH;
+
+      doc.setDrawColor(0, 0, 0);
+      doc.setTextColor(0, 0, 0);
+      doc.setLineWidth(0.25);
+
+      // Kolom 1: Nomor
+      doc.rect(left, y, colWidths[0], totalH);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.text(String(rowData.nomor), left + colWidths[0] / 2, y + 6.2, { align: "center" });
+
+      // Kolom 2: Terakhir dikembalikan
+      let x = left + colWidths[0];
+      doc.rect(x, y, colWidths[1], totalH);
+      if (rowData.lastCompletedBefore) {
+        doc.setFontSize(7.5);
+        doc.text(rowData.lastCompletedBefore, x + colWidths[1] / 2, y + 6.2, { align: "center" });
+      }
+
+      // 4 Blok penugasan
+      x += colWidths[1];
+      for (let i = 0; i < 4; i++) {
+        const w = colWidths[2 + i];
+        const halfW = w / 2;
+        const slot = rowData.slots[i] || null;
+
+        doc.rect(x, y, w, topH);
+        doc.rect(x, y + topH, halfW, botH);
+        doc.rect(x + halfW, y + topH, halfW, botH);
+
+        if (slot) {
+          doc.setFontSize(7.5);
+          const nameTxt = slot.pemegang.length > 21 ? slot.pemegang.slice(0, 20) + "…" : slot.pemegang;
+          doc.text(nameTxt, x + w / 2, y + 3.7, { align: "center" });
+
+          doc.setFontSize(7.2);
+          if (slot.mulai) doc.text(slot.mulai, x + halfW / 2, y + topH + 3.4, { align: "center" });
+          if (slot.kembali) doc.text(slot.kembali, x + halfW + halfW / 2, y + topH + 3.4, { align: "center" });
+        }
+        x += w;
+      }
+      return y + totalH;
+    }
+
+    document.getElementById("btnGenerate").addEventListener("click", async () => {
+      const btn = document.getElementById("btnGenerate");
+      const status = document.getElementById("status");
+      const targetYear = parseInt(document.getElementById("serviceYear").value, 10);
+      const periodStart = `${targetYear - 1}-09-01`;
+      const periodEnd = `${targetYear}-08-31`;
+
+      btn.disabled = true;
+      status.textContent = "Membaca data peta dari Firebase...";
+
+      try {
+        const snap = await get(ref(db, "territories"));
+        const raw = snap.val() || {};
+        const list = Object.values(raw).sort((a, b) => (parseInt(a.nomor, 10) || 0) - (parseInt(b.nomor, 10) || 0));
+
+        if (list.length === 0) {
+          status.textContent = "Data peta kosong atau belum login.";
+          btn.disabled = false;
+          return;
+        }
+
+        status.textContent = `Menyusun ${list.length} daerah ke PDF...`;
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+        // Judul Halaman 1
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13);
+        doc.text("CATATAN DAERAH TUGAS", 105, 14, { align: "center" });
+
+        doc.setFontSize(10.5);
+        doc.text("Tahun Dinas:", 24, 22);
+        doc.text(String(targetYear), 56, 22);
+        doc.setLineWidth(0.35);
+        doc.line(50, 23.2, 70, 23.2);
+
+        let curY = drawHeader(doc, 27);
+
+        list.forEach((t) => {
+          const hist = t.riwayat ? Object.values(t.riwayat) : [];
+
+          // 1. Cari tanggal terakhir dikembalikan sebelum periodStart
+          const prevDates = hist
+            .map(r => r.tanggal_kembali)
+            .filter(d => d && /^\d{4}-\d{2}-\d{2}$/.test(d) && d < periodStart)
+            .sort();
+          const lastBefore = prevDates.length > 0 ? fmtDDMMYY(prevDates[prevDates.length - 1]) : "";
+
+          // 2. Kumpulkan blok penugasan dalam periode berjalan
+          const periodSlots = [];
+          hist.forEach(r => {
+            const m = r.tanggal_mulai || "";
+            const k = r.tanggal_kembali || "";
+            const inRange = (m >= periodStart && m <= periodEnd) || (k >= periodStart && k <= periodEnd);
+            if (inRange) {
+              periodSlots.push({
+                sortKey: m || k,
+                pemegang: r.pemegang || "",
+                mulai: fmtDDMM(m),
+                kembali: /^\d{4}-\d{2}-\d{2}$/.test(k) ? fmtDDMM(k) : ""
+              });
+            }
+          });
+
+          // Tambahkan pemegang aktif saat ini jika masuk periode
+          if (t.pemegang && t.pemegang.trim() !== "") {
+            const mAktif = t.tanggal_mulai || "";
+            if (!mAktif || mAktif <= periodEnd) {
+              periodSlots.push({
+                sortKey: mAktif || "9999-12-31",
+                pemegang: t.pemegang.trim(),
+                mulai: fmtDDMM(mAktif),
+                kembali: ""
+              });
+            }
+          }
+
+          periodSlots.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+
+          // Ganti halaman jika melewati batas bawah A4 (282mm)
+          if (curY + 10 > 282) {
+            doc.addPage();
+            curY = drawHeader(doc, 12);
+          }
+
+          curY = drawRow(doc, curY, {
+            nomor: t.nomor,
+            lastCompletedBefore: lastBefore,
+            slots: periodSlots.slice(0, 4)
+          });
+        });
+
+        doc.save(`S-13_Catatan_Daerah_Tugas_${targetYear}.pdf`);
+        status.textContent = `Selesai! Berhasil mengunduh S-13 (${list.length} daerah).`;
+      } catch (err) {
+        console.error(err);
+        status.textContent = "Gagal membaca data: pastikan kamu sudah login di tab yang sama.";
+      }
+      btn.disabled = false;
+    });
+  </script>
+</body>
+</html>
