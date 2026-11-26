@@ -21,15 +21,19 @@ const KDL_LIST = ["KDL Pemalang", "KDL Tegal Timur", "KDL Tegal Barat"];
 let currentUser = null;
 let currentProfile = { name: "Eden", role_daerah: "hamba_daerah", kdl: "", role_kdl: "" };
 let hasTipe1Access = false;
+let hasBulkAccess = false;
 let canEditTerritory = false;
 let allTerritories = {};
 let allMembers = {};
-let activeFilter = "ALL";
+
+// State Filter Daftar Peta
+let activeKdlFilter = "ALL";
+let tagQuickFilter = "";
 let statusQuickFilter = "";
+
 let selectedId = null;
 let editHistoryMode = false;
 let editingMemberEmail = null;
-let bulkMode = false;
 let selectedBulkIds = new Set();
 let map = null;
 let currentPolygon = null;
@@ -99,6 +103,19 @@ function formatMemberHeadline(m) {
   return "Belum diatur";
 }
 
+function formatIndoTimestamp(isoStr) {
+  if (!isoStr) return "-";
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return isoStr;
+  return d.toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).replace(".", ":");
+}
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
@@ -124,6 +141,11 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   hasTipe1Access = (userEmail === SUPER_ADMIN || Boolean(TIPE1_LABELS[currentProfile.role_daerah]));
+  hasBulkAccess = (
+    userEmail === SUPER_ADMIN ||
+    currentProfile.role_daerah === "hamba_daerah" ||
+    currentProfile.role_daerah === "asisten_hamba_daerah"
+  );
   const hasKdlEditRole = Boolean(currentProfile.kdl && TIPE2_LABELS[currentProfile.role_kdl]);
   canEditTerritory = hasTipe1Access || hasKdlEditRole;
 
@@ -154,18 +176,17 @@ onAuthStateChanged(auth, async (user) => {
 
   if (hasTipe1Access) {
     document.getElementById("bnavMembers").style.display = "flex";
-    document.getElementById("toggleBulkBtn").style.display = "inline-flex";
     const s13Card = document.getElementById("s13FeatureCard");
-  if (s13Card) s13Card.style.display = "block";
-  listenS13Logs();
+    if (s13Card) s13Card.style.display = "block";
+    listenS13Logs();
   } else {
-    document.getElementById("pillPml").style.display = currentProfile.kdl === "KDL Pemalang" ? "inline-flex" : "none";
-    document.getElementById("pillTgt").style.display = currentProfile.kdl === "KDL Tegal Timur" ? "inline-flex" : "none";
-    document.getElementById("pillTgb").style.display = currentProfile.kdl === "KDL Tegal Barat" ? "inline-flex" : "none";
+    const filterKdlSec = document.getElementById("filterKdlSection");
+    if (filterKdlSec) filterKdlSec.style.display = "none";
   }
 
-  if (canEditTerritory) {
-    document.getElementById("openS13ModalBtn").style.display = "inline-flex";
+  if (hasBulkAccess) {
+    const bnavBulk = document.getElementById("bnavBulk");
+    if (bnavBulk) bnavBulk.style.display = "flex";
   }
 
   listenMembers();
@@ -213,7 +234,6 @@ function renderMembers() {
         <div class="member-info">
           <div class="member-name-row">
             <span class="member-name">${displayName}</span>
-            ${isSuper ? `<span class="role-tag">Utama</span>` : ""}
           </div>
           <div class="member-headline">${headline}</div>
           <div class="member-email">${m.email}</div>
@@ -257,9 +277,9 @@ function refreshNewMemberRoleOptions() {
   if (kdlSel && roleKdlSel) syncRoleKdlOptions(kdlSel, roleKdlSel, "");
 }
 
-document.getElementById("newMemberKdl").addEventListener("change", refreshNewMemberRoleOptions);
+document.getElementById("newMemberKdl")?.addEventListener("change", refreshNewMemberRoleOptions);
 
-document.getElementById("openAddMemberBtn").addEventListener("click", () => {
+document.getElementById("openAddMemberBtn")?.addEventListener("click", () => {
   document.getElementById("newMemberEmail").value = "";
   document.getElementById("newMemberName").value = "";
   document.getElementById("newMemberRoleDaerah").value = "";
@@ -269,11 +289,11 @@ document.getElementById("openAddMemberBtn").addEventListener("click", () => {
   document.getElementById("addMemberModal").style.display = "flex";
 });
 
-document.getElementById("closeAddMemberBtn").addEventListener("click", () => {
+document.getElementById("closeAddMemberBtn")?.addEventListener("click", () => {
   document.getElementById("addMemberModal").style.display = "none";
 });
 
-document.getElementById("addMemberBtn").addEventListener("click", async () => {
+document.getElementById("addMemberBtn")?.addEventListener("click", async () => {
   const email = document.getElementById("newMemberEmail").value.trim().toLowerCase();
   const name = document.getElementById("newMemberName").value.trim();
   const roleDaerah = document.getElementById("newMemberRoleDaerah").value;
@@ -322,16 +342,16 @@ window.openEditMemberModal = function(email) {
   document.getElementById("editMemberModal").style.display = "flex";
 };
 
-document.getElementById("editMemberKdl").addEventListener("change", () => {
+document.getElementById("editMemberKdl")?.addEventListener("change", () => {
   syncRoleKdlOptions(document.getElementById("editMemberKdl"), document.getElementById("editMemberRoleKdl"), editingMemberEmail || "");
 });
 
-document.getElementById("closeEditMemberBtn").addEventListener("click", () => {
+document.getElementById("closeEditMemberBtn")?.addEventListener("click", () => {
   document.getElementById("editMemberModal").style.display = "none";
   editingMemberEmail = null;
 });
 
-document.getElementById("saveEditMemberBtn").addEventListener("click", async () => {
+document.getElementById("saveEditMemberBtn")?.addEventListener("click", async () => {
   if (!hasTipe1Access || !editingMemberEmail) return;
   const isSuper = editingMemberEmail.toLowerCase() === SUPER_ADMIN;
   const name = document.getElementById("editMemberName").value.trim() || editingMemberEmail.split("@")[0];
@@ -352,7 +372,7 @@ document.getElementById("saveEditMemberBtn").addEventListener("click", async () 
   editingMemberEmail = null;
 });
 
-document.getElementById("deleteEditMemberBtn").addEventListener("click", async () => {
+document.getElementById("deleteEditMemberBtn")?.addEventListener("click", async () => {
   if (!hasTipe1Access || !editingMemberEmail || editingMemberEmail.toLowerCase() === SUPER_ADMIN) return;
   if (!confirm(`Hapus akses untuk ${editingMemberEmail}?`)) return;
   await remove(ref(db, `users/${emailToKey(editingMemberEmail)}`));
@@ -365,6 +385,7 @@ function listenTerritories() {
     allTerritories = snap.val() || {};
     renderHomeOverview();
     renderList();
+    if (hasBulkAccess) renderBulkList();
     if (selectedId && allTerritories[selectedId] && document.getElementById("detailModal").style.display === "flex") {
       renderHistoryList(allTerritories[selectedId]);
     }
@@ -393,15 +414,22 @@ function renderHomeOverview() {
   const visibleKdls = hasTipe1Access ? KDL_LIST : [currentProfile.kdl];
   document.getElementById("breakdownTitle").textContent = hasTipe1Access ? "Sebaran per KDL" : "Ringkasan Wilayah";
 
-  let html = visibleKdls.map(k => {
+let html = visibleKdls.map(k => {
     const sub = list.filter(t => t.kdl === k);
     const active = sub.filter(t => t.pemegang && t.pemegang.trim() !== "").length;
+    const dkCount = sub.filter(t => Boolean(t.daerah_kelompok)).length;
+    const pwCount = sub.filter(t => Boolean(t.kunjungan_pw)).length;
     const pct = sub.length > 0 ? Math.round((active / sub.length) * 100) : 0;
+
     return `
       <div class="kdl-summary-row" onclick="openFilteredList('${k}')">
         <div class="kdl-row-top">
-          <strong>${formatShortKdl(k)}</strong>
-          <span style="color:var(--muted); font-size:0.78rem;">${active} / ${sub.length} peta</span>
+          <div class="kdl-title-inline">
+            <strong>${formatShortKdl(k)}</strong>
+            <span class="dk-tag kdl-inline-tag" onclick="event.stopPropagation(); openFilteredList('${k}', '', 'DK')">Daerah Kelompok: ${dkCount}</span>
+            <span class="pw-tag kdl-inline-tag" onclick="event.stopPropagation(); openFilteredList('${k}', '', 'PW')">Kunjungan PW: ${pwCount}</span>
+          </div>
+          <span style="color:var(--muted); font-size:0.78rem; flex-shrink:0;">${active} / ${sub.length} peta</span>
         </div>
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
       </div>`;
@@ -422,21 +450,75 @@ function renderHomeOverview() {
   document.getElementById("kdlBreakdown").innerHTML = html;
 }
 
+function updateFilterUI() {
+  document.querySelectorAll("#filterKdlGroup .fchip").forEach(b => {
+    b.classList.toggle("active", b.dataset.kdl === activeKdlFilter);
+  });
+  document.querySelectorAll("#filterTipeGroup .fchip").forEach(b => {
+    b.classList.toggle("active", b.dataset.tipe === tagQuickFilter);
+  });
+  document.querySelectorAll("#filterStatusGroup .fchip").forEach(b => {
+    b.classList.toggle("active", b.dataset.status === statusQuickFilter);
+  });
+
+  const activeTags = [];
+  if (activeKdlFilter === "UNASSIGNED") activeTags.push("Belum Masuk KDL");
+  else if (activeKdlFilter !== "ALL") activeTags.push(formatShortKdl(activeKdlFilter));
+
+  if (tagQuickFilter === "UMUM") activeTags.push("Umum");
+  else if (tagQuickFilter === "DK") activeTags.push("Kelompok");
+  else if (tagQuickFilter === "PW") activeTags.push("KPW");
+
+  if (statusQuickFilter === "work") activeTags.push("Aktif");
+  else if (statusQuickFilter === "DUE") activeTags.push("Perlu Audit");
+  else if (statusQuickFilter === "avail") activeTags.push("Kosong");
+
+  const triggerBtn = document.getElementById("openFilterModalBtn");
+  const countBadge = document.getElementById("filterCountBadge");
+  const stripEl = document.getElementById("activeFilterStrip");
+  const tagsEl = document.getElementById("activeFilterTags");
+
+  if (activeTags.length > 0) {
+    triggerBtn?.classList.add("has-active");
+    if (countBadge) {
+      countBadge.textContent = activeTags.length;
+      countBadge.style.display = "inline-flex";
+    }
+    if (stripEl && tagsEl) {
+      tagsEl.innerHTML = activeTags.map(lbl => `<span class="af-tag">${lbl}</span>`).join("");
+      stripEl.style.display = "flex";
+    }
+  } else {
+    triggerBtn?.classList.remove("has-active");
+    if (countBadge) countBadge.style.display = "none";
+    if (stripEl) stripEl.style.display = "none";
+  }
+}
+
+function sortByTerritoryNumber(a, b) {
+  const numA = parseInt(a.nomor, 10);
+  const numB = parseInt(b.nomor, 10);
+  if (!isNaN(numA) && !isNaN(numB) && numA !== numB) return numA - numB;
+  return String(a.nomor ?? "").localeCompare(String(b.nomor ?? ""), "id", { numeric: true });
+}
+
 function getVisibleTerritories() {
   const list = Object.values(allTerritories).filter(t => isMyTerritory(t));
   const search = document.getElementById("searchInput").value.toLowerCase();
 
   return list
     .filter(t => {
-      const isWorking = t.pemegang && t.pemegang.trim() !== "";
-      if (statusQuickFilter === "avail" && isWorking) return false;
-      if (statusQuickFilter === "work" && !isWorking) return false;
+      if (activeKdlFilter === "UNASSIGNED" && t.kdl) return false;
+      if (activeKdlFilter.startsWith("KDL ") && t.kdl !== activeKdlFilter) return false;
 
-      if (activeFilter === "DUE" && !isAuditDue(t)) return false;
-      if (activeFilter === "PW" && !t.kunjungan_pw) return false;
-      if (activeFilter === "PERTOKOAN" && (t.kategori || "Umum") !== "Pertokoan") return false;
-      if (activeFilter === "UNASSIGNED" && t.kdl) return false;
-      if (activeFilter.startsWith("KDL ") && t.kdl !== activeFilter) return false;
+      if (tagQuickFilter === "UMUM" && (t.kategori || "Umum") !== "Umum") return false;
+      if (tagQuickFilter === "DK" && !t.daerah_kelompok) return false;
+      if (tagQuickFilter === "PW" && !t.kunjungan_pw) return false;
+
+      const isWorking = t.pemegang && t.pemegang.trim() !== "";
+      if (statusQuickFilter === "work" && !isWorking) return false;
+      if (statusQuickFilter === "DUE" && !isAuditDue(t)) return false;
+      if (statusQuickFilter === "avail" && isWorking) return false;
 
       if (search) {
         const hay = `${t.nomor} ${t.nama} ${t.pemegang} ${t.kdl || ''} ${t.kategori || ''}`.toLowerCase();
@@ -444,26 +526,16 @@ function getVisibleTerritories() {
       }
       return true;
     })
-    .sort((a, b) => {
-      const numA = parseInt(a.nomor, 10);
-      const numB = parseInt(b.nomor, 10);
-      if (!isNaN(numA) && !isNaN(numB) && numA !== numB) return numA - numB;
-      return String(a.nomor ?? "").localeCompare(String(b.nomor ?? ""), "id", { numeric: true });
-    });
+    .sort(sortByTerritoryNumber);
 }
 
 function renderList() {
-  const mineList = Object.values(allTerritories).filter(t => isMyTerritory(t));
-  document.getElementById("cAll").textContent = mineList.length;
-  document.getElementById("cPml").textContent = mineList.filter(t => t.kdl === "KDL Pemalang").length;
-  document.getElementById("cTgt").textContent = mineList.filter(t => t.kdl === "KDL Tegal Timur").length;
-  document.getElementById("cTgb").textContent = mineList.filter(t => t.kdl === "KDL Tegal Barat").length;
-  document.getElementById("cPw").textContent = mineList.filter(t => Boolean(t.kunjungan_pw)).length;
-  document.getElementById("cToko").textContent = mineList.filter(t => (t.kategori || "Umum") === "Pertokoan").length;
-  document.getElementById("cDue").textContent = mineList.filter(t => isAuditDue(t)).length;
+  updateFilterUI();
 
   const filtered = getVisibleTerritories();
   const container = document.getElementById("territoryList");
+  if (!container) return;
+
   if (filtered.length === 0) {
     container.innerHTML = `<div style="padding: 1.75rem; text-align: center; color: var(--muted); font-size: 0.84rem;">Tidak ada peta ditemukan.</div>`;
     return;
@@ -479,17 +551,16 @@ function renderList() {
     const kdlLabel = formatShortKdl(t.kdl);
     const katLabel = t.kategori || "Umum";
     const subText = isWorking ? `${t.pemegang} • ${kdlLabel}` : `${kdlLabel} • ${katLabel}`;
-    const checked = selectedBulkIds.has(t.id) ? "checked" : "";
 
     return `
-      <div class="list-item ${due ? 'is-due' : ''}" onclick="handleItemClick('${t.id}')">
-        <input type="checkbox" class="bulk-check" style="display:${bulkMode ? 'block' : 'none'};" ${checked} onclick="event.stopPropagation(); toggleBulkItem('${t.id}')">
+      <div class="list-item ${due ? 'is-due' : ''}" onclick="openDetail('${t.id}')">
         <div class="item-left">
           <span class="item-num">#${t.nomor}</span>
           <div class="item-info">
             <div class="item-title-row">
               <div class="item-title">${cleanTerritoryName(t)}</div>
               ${t.kunjungan_pw ? `<span class="pw-tag">Kunjungan PW</span>` : ""}
+              ${t.daerah_kelompok ? `<span class="dk-tag">Daerah Kelompok</span>` : ""}
             </div>
             <div class="item-sub">${subText}</div>
           </div>
@@ -500,90 +571,239 @@ function renderList() {
   }).join("");
 }
 
-window.handleItemClick = function(id) {
-  if (bulkMode) {
-    toggleBulkItem(id);
-    renderList();
-  } else {
-    openDetail(id);
+// === BULK EDITOR (KHUSUS HAMBA DAERAH & ASISTEN HAMBA DAERAH) ===
+function getBulkFilteredTerritories() {
+  const kdlFilter = document.getElementById("bulkFilterKdl")?.value || "ALL";
+  const search = (document.getElementById("bulkSearchInput")?.value || "").toLowerCase().trim();
+
+  return Object.values(allTerritories)
+    .filter(t => {
+      if (kdlFilter === "UNASSIGNED" && t.kdl) return false;
+      if (kdlFilter.startsWith("KDL ") && t.kdl !== kdlFilter) return false;
+      if (search) {
+        const hay = `${t.nomor} ${t.nama} ${t.kdl || ''} ${t.kategori || ''}`.toLowerCase();
+        if (!hay.includes(search)) return false;
+      }
+      return true;
+    })
+    .sort(sortByTerritoryNumber);
+}
+
+function updateBulkSelectionUI() {
+  const count = selectedBulkIds.size;
+  const countEl = document.getElementById("selectedCount");
+  const badgeEl = document.getElementById("bulkSelectedBadge");
+  const barEl = document.getElementById("bulkActionBar");
+
+  if (countEl) countEl.textContent = count;
+  if (badgeEl) badgeEl.textContent = `${count} dipilih`;
+
+  const isBulkPageActive = document.getElementById("pageBulk")?.style.display === "block";
+  if (barEl) barEl.style.display = (isBulkPageActive && count > 0) ? "flex" : "none";
+}
+
+function renderBulkList() {
+  if (!hasBulkAccess) return;
+  const container = document.getElementById("bulkTerritoryList");
+  if (!container) return;
+
+  const filtered = getBulkFilteredTerritories();
+  if (filtered.length === 0) {
+    container.innerHTML = `<div style="padding: 1.75rem; text-align: center; color: var(--muted); font-size: 0.84rem;">Tidak ada peta ditemukan.</div>`;
+    return;
   }
-};
+
+  container.innerHTML = filtered.map(t => {
+    const checked = selectedBulkIds.has(t.id) ? "checked" : "";
+    const kdlLabel = formatShortKdl(t.kdl);
+    const katLabel = t.kategori || "Umum";
+
+    return `
+      <div class="list-item" onclick="toggleBulkItem('${t.id}')">
+        <input type="checkbox" class="bulk-check" style="display: block;" ${checked} onclick="event.stopPropagation(); toggleBulkItem('${t.id}')">
+        <div class="item-left">
+          <span class="item-num">#${t.nomor}</span>
+          <div class="item-info">
+            <div class="item-title-row">
+              <div class="item-title">${cleanTerritoryName(t)}</div>
+              ${t.kunjungan_pw ? `<span class="pw-tag">KPW</span>` : ""}
+              ${t.daerah_kelompok ? `<span class="dk-tag">Kelompok</span>` : ""}
+            </div>
+            <div class="item-sub">${kdlLabel} • ${katLabel}${t.pemegang ? ` • ${t.pemegang}` : ''}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  updateBulkSelectionUI();
+}
 
 window.toggleBulkItem = function(id) {
+  if (!hasBulkAccess) return;
   if (selectedBulkIds.has(id)) selectedBulkIds.delete(id);
   else selectedBulkIds.add(id);
-  document.getElementById("selectedCount").textContent = selectedBulkIds.size;
-  document.getElementById("bulkActionBar").style.display = selectedBulkIds.size > 0 ? "flex" : "none";
+  renderBulkList();
 };
 
-document.getElementById("toggleBulkBtn").addEventListener("click", () => {
-  if (!hasTipe1Access) return;
-  bulkMode = !bulkMode;
+document.getElementById("selectRangeBtn")?.addEventListener("click", () => {
+  if (!hasBulkAccess) return;
+  const raw = document.getElementById("bulkRangeInput").value.trim();
+  if (!raw) return;
+
+  const targetNums = new Set();
+  raw.split(",").forEach(part => {
+    const clean = part.trim();
+    if (clean.includes("-")) {
+      const [startStr, endStr] = clean.split("-");
+      const start = parseInt(startStr, 10);
+      const end = parseInt(endStr, 10);
+      if (!isNaN(start) && !isNaN(end) && start <= end) {
+        for (let i = start; i <= end; i++) targetNums.add(i);
+      }
+    } else {
+      const single = parseInt(clean, 10);
+      if (!isNaN(single)) targetNums.add(single);
+    }
+  });
+
+  Object.values(allTerritories).forEach(t => {
+    const num = parseInt(t.nomor, 10);
+    if (!isNaN(num) && targetNums.has(num)) {
+      selectedBulkIds.add(t.id);
+    }
+  });
+
+  renderBulkList();
+});
+
+document.getElementById("bulkSelectAllBtn")?.addEventListener("click", () => {
+  if (!hasBulkAccess) return;
+  getBulkFilteredTerritories().forEach(t => selectedBulkIds.add(t.id));
+  renderBulkList();
+});
+
+document.getElementById("bulkClearAllBtn")?.addEventListener("click", () => {
   selectedBulkIds.clear();
-  const btn = document.getElementById("toggleBulkBtn");
-  btn.classList.toggle("active", bulkMode);
-  btn.querySelector("span").textContent = bulkMode ? "Batal" : "Pilih";
-  document.getElementById("bulkSubbar").style.display = bulkMode ? "flex" : "none";
-  document.getElementById("bulkActionBar").style.display = "none";
-  renderList();
+  document.getElementById("bulkRangeInput").value = "";
+  renderBulkList();
 });
 
-document.getElementById("selectAllVisibleBtn").addEventListener("click", () => {
-  const visible = getVisibleTerritories();
-  visible.forEach(t => selectedBulkIds.add(t.id));
-  document.getElementById("selectedCount").textContent = selectedBulkIds.size;
-  document.getElementById("bulkActionBar").style.display = selectedBulkIds.size > 0 ? "flex" : "none";
-  renderList();
-});
+document.getElementById("bulkFilterKdl")?.addEventListener("change", renderBulkList);
+document.getElementById("bulkSearchInput")?.addEventListener("input", renderBulkList);
 
-document.getElementById("applyBulkBtn").addEventListener("click", async () => {
-  if (!hasTipe1Access || selectedBulkIds.size === 0) return;
+document.getElementById("applyBulkBtn")?.addEventListener("click", async () => {
+  if (!hasBulkAccess || selectedBulkIds.size === 0) return;
   const rawAction = document.getElementById("bulkTargetAction").value;
   const [actionType, actionVal] = rawAction.split(":");
-  const updates = {};
 
+  if (actionType === "reset" && !confirm(`Reset ${selectedBulkIds.size} peta terpilih menjadi Kosong / Tersedia?`)) return;
+
+  const updates = {};
   selectedBulkIds.forEach(id => {
     if (actionType === "kdl") updates[`territories/${id}/kdl`] = actionVal;
     else if (actionType === "pw") updates[`territories/${id}/kunjungan_pw`] = (actionVal === "true");
+    else if (actionType === "dk") updates[`territories/${id}/daerah_kelompok`] = (actionVal === "true");
     else if (actionType === "cat") updates[`territories/${id}/kategori`] = actionVal;
+    else if (actionType === "reset") {
+      updates[`territories/${id}/pemegang`] = "";
+      updates[`territories/${id}/status`] = "Tersedia";
+      updates[`territories/${id}/tanggal_mulai`] = "";
+      updates[`territories/${id}/jatuh_tempo_audit`] = "";
+      updates[`territories/${id}/catatan`] = "";
+    }
   });
 
   await update(ref(db), updates);
-  bulkMode = false;
   selectedBulkIds.clear();
-  const btn = document.getElementById("toggleBulkBtn");
-  btn.classList.remove("active");
-  btn.querySelector("span").textContent = "Pilih";
-  document.getElementById("bulkSubbar").style.display = "none";
-  document.getElementById("bulkActionBar").style.display = "none";
-  renderList();
+  renderBulkList();
 });
 
 window.switchPage = function(pageId) {
   if (pageId === "pageMembers" && !hasTipe1Access) return;
-  ["pageHome", "pageTerritories", "pageMembers"].forEach(p => {
-    document.getElementById(p).style.display = p === pageId ? "block" : "none";
+  if (pageId === "pageBulk" && !hasBulkAccess) return;
+
+  ["pageHome", "pageTerritories", "pageMembers", "pageBulk"].forEach(p => {
+    const el = document.getElementById(p);
+    if (el) el.style.display = p === pageId ? "block" : "none";
   });
   document.querySelectorAll(".bnav-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.page === pageId);
   });
-  const titles = { pageHome: "Terita", pageTerritories: "Daftar Peta", pageMembers: "Anggota" };
+  const titles = {
+    pageHome: "Terita",
+    pageTerritories: "Daftar Peta",
+    pageMembers: "Anggota",
+    pageBulk: "Bulk Editor"
+  };
   document.getElementById("headerTitle").textContent = titles[pageId] || "Terita";
 
-  if (pageId !== "pageTerritories") {
-    document.getElementById("bulkActionBar").style.display = "none";
-  }
+  if (pageId === "pageBulk") renderBulkList();
+  updateBulkSelectionUI();
 };
 
-window.openFilteredList = function(filterVal, statusFilter = "") {
-  activeFilter = filterVal;
+window.openFilteredList = function(filterVal, statusFilter = "", tipeFilter = "") {
+  activeKdlFilter = "ALL";
+  tagQuickFilter = tipeFilter;
   statusQuickFilter = statusFilter;
-  document.querySelectorAll(".pill-btn").forEach(b => {
-    b.classList.toggle("active", b.dataset.filter === filterVal);
-  });
+
+  if (filterVal === "DUE") statusQuickFilter = "DUE";
+  else if (filterVal === "PW" || filterVal === "DK" || filterVal === "UMUM") tagQuickFilter = filterVal;
+  else if (filterVal === "UNASSIGNED" || filterVal.startsWith("KDL ")) activeKdlFilter = filterVal;
+
   switchPage("pageTerritories");
   renderList();
 };
+
+// Event Listener Modal Filter
+document.getElementById("openFilterModalBtn")?.addEventListener("click", () => {
+  updateFilterUI();
+  document.getElementById("filterModal").style.display = "flex";
+});
+
+document.getElementById("closeFilterModalBtn")?.addEventListener("click", () => {
+  document.getElementById("filterModal").style.display = "none";
+});
+
+document.querySelectorAll("#filterKdlGroup .fchip").forEach(btn => {
+  btn.addEventListener("click", () => {
+    activeKdlFilter = btn.dataset.kdl;
+    updateFilterUI();
+  });
+});
+
+document.querySelectorAll("#filterTipeGroup .fchip").forEach(btn => {
+  btn.addEventListener("click", () => {
+    tagQuickFilter = btn.dataset.tipe;
+    updateFilterUI();
+  });
+});
+
+document.querySelectorAll("#filterStatusGroup .fchip").forEach(btn => {
+  btn.addEventListener("click", () => {
+    statusQuickFilter = btn.dataset.status;
+    updateFilterUI();
+  });
+});
+
+document.getElementById("applyFilterBtn")?.addEventListener("click", () => {
+  document.getElementById("filterModal").style.display = "none";
+  renderList();
+});
+
+function resetAllFilters() {
+  activeKdlFilter = "ALL";
+  tagQuickFilter = "";
+  statusQuickFilter = "";
+  renderList();
+}
+
+document.getElementById("resetFilterModalBtn")?.addEventListener("click", () => {
+  resetAllFilters();
+  document.getElementById("filterModal").style.display = "none";
+});
+
+document.getElementById("resetFilterQuickBtn")?.addEventListener("click", resetAllFilters);
 
 document.querySelectorAll(".bnav-btn").forEach(btn => {
   btn.addEventListener("click", () => switchPage(btn.dataset.page));
@@ -598,29 +818,42 @@ function closeModal() {
 function renderHistoryList(t) {
   const histEl = document.getElementById("historyList");
   const toggleBtn = document.getElementById("toggleEditHistoryBtn");
+  const summaryEl = document.getElementById("historySummaryText");
+  const chevEl = document.getElementById("historyChevron");
+  const drawerEl = document.getElementById("historyDrawer");
   const entries = t.riwayat ? Object.entries(t.riwayat).reverse() : [];
 
   if (entries.length === 0) {
-    toggleBtn.style.display = "none";
-    histEl.innerHTML = `<div style="font-size:0.78rem; color:var(--muted);">Belum ada riwayat sebelumnya.</div>`;
+    if (summaryEl) summaryEl.textContent = "Belum ada riwayat pengerjaan.";
+    if (chevEl) chevEl.style.display = "none";
+    if (drawerEl) drawerEl.style.display = "none";
+    if (toggleBtn) toggleBtn.style.display = "none";
+    if (histEl) histEl.innerHTML = "";
     return;
   }
 
-  toggleBtn.style.display = hasTipe1Access ? "inline-flex" : "none";
-  toggleBtn.textContent = editHistoryMode ? "Selesai Kelola" : "Kelola Riwayat";
-  toggleBtn.style.color = editHistoryMode ? "var(--primary)" : "var(--text)";
+  const [, latest] = entries[0];
+  if (summaryEl) {
+    summaryEl.textContent = `Riwayat (${entries.length}): Terakhir ${latest.pemegang} (${latest.tanggal_kembali || latest.tanggal_mulai || '-'})`;
+  }
+  if (chevEl) chevEl.style.display = "block";
+
+  if (toggleBtn) {
+    toggleBtn.style.display = hasTipe1Access ? "inline-flex" : "none";
+    toggleBtn.textContent = editHistoryMode ? "Selesai Kelola" : "Kelola Riwayat";
+  }
 
   histEl.innerHTML = entries.map(([histKey, r]) => `
     <div class="hist-item">
       <div style="min-width: 0; flex: 1;">
         <strong>${r.pemegang}</strong>
-        <div style="color:var(--muted); font-size:0.72rem;">${r.keterangan || ''}</div>
+        <div style="color:var(--muted); font-size:0.7rem;">${r.keterangan || ''}</div>
       </div>
-      <div style="text-align:right; font-size:0.72rem; color:var(--muted); flex-shrink: 0;">
+      <div style="text-align:right; font-size:0.7rem; color:var(--muted); flex-shrink: 0;">
         ${r.tanggal_mulai || '-'}<br>s/d ${r.tanggal_kembali || '-'}
       </div>
       ${editHistoryMode ? `
-        <button type="button" class="btn-sm btn-logout" style="padding: 0.3rem 0.5rem; margin-left: 0.35rem;" onclick="deleteHistoryItem('${histKey}', '${(r.pemegang || '').replace(/'/g, "\\'")}')">
+        <button type="button" class="btn-sm btn-logout" style="padding: 0.25rem 0.45rem; margin-left: 0.35rem; font-size: 0.7rem;" onclick="deleteHistoryItem('${histKey}', '${(r.pemegang || '').replace(/'/g, "\\'")}')">
           Hapus
         </button>
       ` : ''}
@@ -628,7 +861,17 @@ function renderHistoryList(t) {
   `).join("");
 }
 
-document.getElementById("toggleEditHistoryBtn").addEventListener("click", () => {
+document.getElementById("toggleHistoryBarBtn")?.addEventListener("click", () => {
+  const drawer = document.getElementById("historyDrawer");
+  const chev = document.getElementById("historyChevron");
+  if (!drawer || !document.getElementById("historyList")?.innerHTML.trim()) return;
+
+  const isOpen = drawer.style.display === "block";
+  drawer.style.display = isOpen ? "none" : "block";
+  if (chev) chev.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+});
+
+document.getElementById("toggleEditHistoryBtn")?.addEventListener("click", () => {
   if (!selectedId || !allTerritories[selectedId]) return;
   editHistoryMode = !editHistoryMode;
   renderHistoryList(allTerritories[selectedId]);
@@ -640,14 +883,7 @@ window.deleteHistoryItem = async function(histKey, pemegangName) {
   await remove(ref(db, `territories/${selectedId}/riwayat/${histKey}`));
 };
 
-window.fillHolderKdl = function(kdlName) {
-  if (!canEditTerritory) return;
-  document.getElementById("fPemegang").value = kdlName;
-  const tglEl = document.getElementById("fTglMulai");
-  if (!tglEl.value) tglEl.value = new Date().toISOString().split("T")[0];
-};
-
-document.getElementById("toggleAttrBtn").addEventListener("click", () => {
+document.getElementById("toggleAttrBtn")?.addEventListener("click", () => {
   const body = document.getElementById("attrBody");
   const chev = document.getElementById("attrChevron");
   const isOpen = body.style.display === "block";
@@ -661,9 +897,8 @@ window.openDetail = function(id) {
   const t = allTerritories[id];
   if (!t) return;
 
-  document.getElementById("mNama").textContent = cleanTerritoryName(t);
-  document.getElementById("mPwBadge").style.display = t.kunjungan_pw ? "inline-block" : "none";
-  document.getElementById("mMetaSub").textContent = `${formatShortKdl(t.kdl)} • ${t.kategori || "Umum"}`;
+  const numPrefix = t.nomor ? `#${t.nomor} — ` : "";
+  document.getElementById("mNama").textContent = `${numPrefix}${cleanTerritoryName(t)}`;
 
   const inpPemegang = document.getElementById("fPemegang");
   const inpTglMulai = document.getElementById("fTglMulai");
@@ -678,15 +913,17 @@ window.openDetail = function(id) {
   document.getElementById("fKdlPeta").value = t.kdl || "";
   document.getElementById("fMyMapsUrl").value = t.mymaps_url || "";
   document.getElementById("fKunjunganPw").checked = Boolean(t.kunjungan_pw);
+  document.getElementById("fDaerahKelompok").checked = Boolean(t.daerah_kelompok);
 
   document.getElementById("attrBody").style.display = "none";
   document.getElementById("attrChevron").style.transform = "rotate(0deg)";
+  document.getElementById("historyDrawer").style.display = "none";
+  document.getElementById("historyChevron").style.transform = "rotate(0deg)";
 
   inpPemegang.disabled = !canEditTerritory;
   inpTglMulai.disabled = !canEditTerritory;
   inpCatatan.disabled = !canEditTerritory;
 
-  document.getElementById("kdlQuickChips").style.display = canEditTerritory ? "flex" : "none";
   document.getElementById("attrPanel").style.display = canEditTerritory ? "block" : "none";
   document.getElementById("fKdlField").style.display = hasTipe1Access ? "block" : "none";
 
@@ -719,7 +956,7 @@ window.openDetail = function(id) {
   }, 150);
 };
 
-document.getElementById("saveBtn").addEventListener("click", async () => {
+document.getElementById("saveBtn")?.addEventListener("click", async () => {
   if (!selectedId || !canEditTerritory) return;
   const t = allTerritories[selectedId];
   const pemegang = document.getElementById("fPemegang").value.trim();
@@ -738,7 +975,8 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
     nama: document.getElementById("fNamaDaerah").value.trim() || t.nama || "",
     kategori: document.getElementById("fKategori").value,
     mymaps_url: document.getElementById("fMyMapsUrl").value.trim(),
-    kunjungan_pw: document.getElementById("fKunjunganPw").checked
+    kunjungan_pw: document.getElementById("fKunjunganPw").checked,
+    daerah_kelompok: document.getElementById("fDaerahKelompok").checked
   };
 
   if (hasTipe1Access) payload.kdl = document.getElementById("fKdlPeta").value;
@@ -747,7 +985,7 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
   closeModal();
 });
 
-document.getElementById("shareWaBtn").addEventListener("click", () => {
+document.getElementById("shareWaBtn")?.addEventListener("click", () => {
   if (!selectedId) return;
   const t = allTerritories[selectedId];
   if (!t) return;
@@ -777,7 +1015,7 @@ document.getElementById("shareWaBtn").addEventListener("click", () => {
   window.open(`https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`, "_blank");
 });
 
-document.getElementById("auditContinueBtn").addEventListener("click", async () => {
+document.getElementById("auditContinueBtn")?.addEventListener("click", async () => {
   if (!selectedId || !canEditTerritory) return;
   const pemegang = document.getElementById("fPemegang").value.trim();
   if (!pemegang) return;
@@ -797,7 +1035,7 @@ document.getElementById("auditContinueBtn").addEventListener("click", async () =
   openDetail(selectedId);
 });
 
-document.getElementById("finishBtn").addEventListener("click", async () => {
+document.getElementById("finishBtn")?.addEventListener("click", async () => {
   if (!selectedId || !canEditTerritory) return;
   const pemegang = document.getElementById("fPemegang").value.trim();
   if (!pemegang) return;
@@ -815,19 +1053,9 @@ document.getElementById("finishBtn").addEventListener("click", async () => {
   openDetail(selectedId);
 });
 
-document.querySelectorAll(".pill-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".pill-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    activeFilter = btn.dataset.filter;
-    statusQuickFilter = "";
-    renderList();
-  });
-});
-
-document.getElementById("closeModalBtn").addEventListener("click", closeModal);
-document.getElementById("searchInput").addEventListener("input", renderList);
-document.getElementById("logoutBtn").addEventListener("click", async () => {
+document.getElementById("closeModalBtn")?.addEventListener("click", closeModal);
+document.getElementById("searchInput")?.addEventListener("input", renderList);
+document.getElementById("logoutBtn")?.addEventListener("click", async () => {
   await signOut(auth);
   window.location.href = "index.html";
 });
@@ -839,42 +1067,26 @@ const sunSvg = `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.9
 
 const savedTheme = localStorage.getItem("theme") || "light";
 document.documentElement.setAttribute("data-theme", savedTheme);
-themeIcon.innerHTML = savedTheme === "dark" ? sunSvg : moonSvg;
+if (themeIcon) themeIcon.innerHTML = savedTheme === "dark" ? sunSvg : moonSvg;
 
-themeToggle.addEventListener("click", () => {
+themeToggle?.addEventListener("click", () => {
   const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
   document.documentElement.setAttribute("data-theme", next);
   localStorage.setItem("theme", next);
-  themeIcon.innerHTML = next === "dark" ? sunSvg : moonSvg;
+  if (themeIcon) themeIcon.innerHTML = next === "dark" ? sunSvg : moonSvg;
 });
 
-document.getElementById("openS13ModalBtn").addEventListener("click", () => {
-  if (!canEditTerritory) return;
-  const kdlField = document.getElementById("s13KdlField");
-  const kdlSelect = document.getElementById("s13KdlSelect");
+// === LOG & EXPORT S-13 (KHUSUS 4 ROLE TIPE 1 — OTOMATIS SEMUA KDL) ===
+document.getElementById("toggleS13LogBtn")?.addEventListener("click", () => {
+  const listEl = document.getElementById("s13LogList");
+  const chevEl = document.getElementById("s13LogChevron");
+  if (!listEl || !listEl.innerHTML.trim()) return;
 
-  if (hasTipe1Access) {
-    kdlField.style.display = "block";
-    kdlSelect.value = "ALL";
-  } else {
-    kdlField.style.display = "none";
-    kdlSelect.value = currentProfile.kdl;
-  }
-  document.getElementById("s13Modal").style.display = "flex";
+  const isOpen = listEl.style.display === "flex";
+  listEl.style.display = isOpen ? "none" : "flex";
+  if (chevEl) chevEl.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
 });
 
-document.getElementById("closeS13ModalBtn").addEventListener("click", () => {
-  document.getElementById("s13Modal").style.display = "none";
-});
-
-document.getElementById("downloadS13Btn").addEventListener("click", () => {
-  const year = parseInt(document.getElementById("s13YearSelect").value, 10);
-  const kdlVal = hasTipe1Access ? document.getElementById("s13KdlSelect").value : currentProfile.kdl;
-  generateS13Pdf(allTerritories, year, kdlVal);
-  document.getElementById("s13Modal").style.display = "none";
-});
-
-// === LOG & EXPORT S-13 (KHUSUS 4 ROLE TIPE 1) ===
 function listenS13Logs() {
   if (!hasTipe1Access) return;
   onValue(ref(db, "s13_logs"), (snap) => {
@@ -883,51 +1095,54 @@ function listenS13Logs() {
 
     const lastBarText = document.getElementById("s13LastLogText");
     const logListEl = document.getElementById("s13LogList");
+    const chevEl = document.getElementById("s13LogChevron");
 
     if (logs.length === 0) {
-      lastBarText.textContent = "Belum ada riwayat generate S-13.";
-      logListEl.innerHTML = `<div style="font-size: 0.78rem; color: var(--muted);">Belum ada riwayat cetak.</div>`;
+      if (lastBarText) lastBarText.textContent = "Belum ada riwayat generate S-13.";
+      if (logListEl) {
+        logListEl.innerHTML = "";
+        logListEl.style.display = "none";
+      }
+      if (chevEl) chevEl.style.display = "none";
       return;
     }
 
     const latest = logs[0];
-    const latestKdl = latest.kdl === "ALL" ? "Semua KDL" : latest.kdl;
-    lastBarText.textContent = `Terakhir: TD ${latest.tahun_dinas} (${latestKdl}) • oleh ${latest.nama} (${latest.role_label}) • ${formatIndoTimestamp(latest.timestamp)}`;
+    if (lastBarText) {
+      lastBarText.textContent = `Terakhir: TD ${latest.tahun_dinas} • oleh ${latest.nama} (${latest.role_label}) • ${formatIndoTimestamp(latest.timestamp)}`;
+    }
+    if (chevEl) chevEl.style.display = "block";
 
-    logListEl.innerHTML = logs.slice(0, 10).map(item => {
-      const kdlText = item.kdl === "ALL" ? "Semua KDL" : item.kdl;
-      return `
+    if (logListEl) {
+      logListEl.innerHTML = logs.slice(0, 5).map(item => `
         <div class="hist-item">
           <div style="min-width: 0; flex: 1;">
             <strong>${item.nama}</strong> <span class="role-tag" style="margin-left: 0.25rem;">${item.role_label}</span>
-            <div style="color: var(--muted); font-size: 0.72rem; margin-top: 0.12rem;">Tahun Dinas ${item.tahun_dinas} • ${kdlText}</div>
+            <div style="color: var(--muted); font-size: 0.72rem; margin-top: 0.12rem;">Tahun Dinas ${item.tahun_dinas} • Semua KDL</div>
           </div>
           <div style="text-align: right; font-size: 0.72rem; color: var(--muted); flex-shrink: 0;">
             ${formatIndoTimestamp(item.timestamp)}
           </div>
         </div>
-      `;
-    }).join("");
+      `).join("");
+    }
   });
 }
 
-document.getElementById("openS13ModalBtn").addEventListener("click", () => {
+document.getElementById("openS13ModalBtn")?.addEventListener("click", () => {
   if (!hasTipe1Access) return;
-  document.getElementById("s13KdlField").style.display = "block";
-  document.getElementById("s13KdlSelect").value = "ALL";
   document.getElementById("s13Modal").style.display = "flex";
 });
 
-document.getElementById("closeS13ModalBtn").addEventListener("click", () => {
+document.getElementById("closeS13ModalBtn")?.addEventListener("click", () => {
   document.getElementById("s13Modal").style.display = "none";
 });
 
-document.getElementById("downloadS13Btn").addEventListener("click", async () => {
+document.getElementById("downloadS13Btn")?.addEventListener("click", async () => {
   if (!hasTipe1Access) return;
   const year = parseInt(document.getElementById("s13YearSelect").value, 10);
-  const kdlVal = document.getElementById("s13KdlSelect").value;
 
-  generateS13Pdf(allTerritories, year, kdlVal);
+  generateS13Pdf(allTerritories, year, "ALL");
 
   const roleLabel = TIPE1_LABELS[currentProfile.role_daerah] || "Hamba Daerah";
   await push(ref(db, "s13_logs"), {
@@ -935,7 +1150,7 @@ document.getElementById("downloadS13Btn").addEventListener("click", async () => 
     email: currentUser.email.toLowerCase(),
     role_label: roleLabel,
     tahun_dinas: year,
-    kdl: kdlVal,
+    kdl: "ALL",
     timestamp: new Date().toISOString()
   });
 
