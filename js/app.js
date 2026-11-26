@@ -426,8 +426,8 @@ let html = visibleKdls.map(k => {
         <div class="kdl-row-top">
           <div class="kdl-title-inline">
             <strong>${formatShortKdl(k)}</strong>
-            <span class="dk-tag kdl-inline-tag" onclick="event.stopPropagation(); openFilteredList('${k}', '', 'DK')">Daerah Kelompok: ${dkCount}</span>
-            <span class="pw-tag kdl-inline-tag" onclick="event.stopPropagation(); openFilteredList('${k}', '', 'PW')">Kunjungan PW: ${pwCount}</span>
+            <span class="dk-tag kdl-inline-tag" onclick="event.stopPropagation(); openFilteredList('${k}', '', 'DK')">Kelompok: ${dkCount}</span>
+            <span class="pw-tag kdl-inline-tag" onclick="event.stopPropagation(); openFilteredList('${k}', '', 'PW')">KPW: ${pwCount}</span>
           </div>
           <span style="color:var(--muted); font-size:0.78rem; flex-shrink:0;">${active} / ${sub.length} peta</span>
         </div>
