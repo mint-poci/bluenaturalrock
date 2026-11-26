@@ -32,11 +32,12 @@
     .card {
       background: var(--card); border: 1px solid var(--border); border-radius: 16px;
       padding: 1.75rem; width: 100%; max-width: 380px; position: relative;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
     }
     .theme-btn {
       position: absolute; top: 1.25rem; right: 1.25rem; background: transparent;
       border: 1px solid var(--border); color: var(--text); width: 34px; height: 34px;
-      border-radius: 10px; cursor: pointer;
+      border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;
     }
     h1 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.25rem; }
     p.subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
@@ -46,10 +47,12 @@
       width: 100%; padding: 0.7rem 0.85rem; border-radius: 10px;
       border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.92rem;
     }
+    input:focus { outline: none; border-color: var(--primary); }
     .btn {
       width: 100%; padding: 0.75rem; border-radius: 10px; border: none;
-      font-weight: 600; font-size: 0.92rem; cursor: pointer;
+      font-weight: 600; font-size: 0.92rem; cursor: pointer; transition: opacity 0.15s ease;
     }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-primary { background: var(--primary); color: #fff; margin-top: 0.25rem; }
     .btn-google {
       background: var(--bg); color: var(--text); border: 1px solid var(--border);
@@ -57,26 +60,36 @@
     }
     .divider { text-align: center; margin: 1.15rem 0; font-size: 0.78rem; color: var(--muted); }
     .alert {
-      background: rgba(239, 68, 68, 0.12); color: var(--danger); padding: 0.7rem;
-      border-radius: 8px; font-size: 0.82rem; margin-bottom: 1rem; display: none;
+      background: rgba(239, 68, 68, 0.12); color: var(--danger); padding: 0.75rem;
+      border-radius: 10px; font-size: 0.82rem; line-height: 1.45; margin-bottom: 1rem; display: none;
+    }
+    .inapp-notice {
+      background: rgba(37, 99, 235, 0.1); border: 1px solid rgba(37, 99, 235, 0.25);
+      color: var(--text); padding: 0.75rem; border-radius: 10px;
+      font-size: 0.8rem; line-height: 1.45; margin-bottom: 1rem; display: none;
     }
   </style>
 </head>
 <body>
   <div class="card">
-    <button class="theme-btn" id="themeToggle">🌙</button>
+    <button class="theme-btn" id="themeToggle" type="button">🌙</button>
     <h1>Terita</h1>
     <p class="subtitle">Portal peta daerah terdaftar</p>
+
+    <div class="inapp-notice" id="inAppNotice">
+      <strong>Buka di Safari / Chrome:</strong> Anda membuka link ini dari dalam aplikasi (WhatsApp/IG). Ketuk ikon <strong>Kompas / Buka di Browser</strong> di pojok bawah agar login Google berhasil.
+    </div>
+
     <div class="alert" id="errorBox"></div>
 
     <form id="authForm">
       <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="email" placeholder="nama@email.com" required>
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="nama@email.com" required autocomplete="email">
       </div>
       <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="password" placeholder="••••••••" required>
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
       </div>
       <button type="submit" class="btn btn-primary" id="submitBtn">Masuk</button>
     </form>
@@ -85,7 +98,7 @@
 
     <button type="button" class="btn btn-google" id="googleBtn">
       <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18" alt="Google">
-      Lanjutkan dengan Google
+      <span id="googleBtnText">Lanjutkan dengan Google</span>
     </button>
   </div>
 
@@ -97,7 +110,17 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import {
+      getAuth,
+      setPersistence,
+      browserLocalPersistence,
+      signInWithEmailAndPassword,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signInWithRedirect,
+      getRedirectResult,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCzX0UOkVwvRkUuGBWVcec92AWj2tjQeoE",
@@ -111,38 +134,81 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({
-      prompt: "select_account"
-    });
+    provider.setCustomParameters({ prompt: "select_account" });
 
-    onAuthStateChanged(auth, (user) => {
-      if (user) window.location.href = "dashboard.html";
-    });
+    // Simpan sesi di localStorage agar tidak hilang saat Safari memblokir sessionStorage
+    await setPersistence(auth, browserLocalPersistence).catch(() => {});
 
     const errorBox = document.getElementById("errorBox");
+    const googleBtn = document.getElementById("googleBtn");
+    const googleBtnText = document.getElementById("googleBtnText");
+
     function showError(msg) {
       errorBox.textContent = msg;
       errorBox.style.display = "block";
     }
 
+    // Deteksi jika dibuka dari browser internal WhatsApp / Instagram / Line di HP
+    const ua = navigator.userAgent || "";
+    if (/WhatsApp|FBAN|FBAV|Instagram|Line/i.test(ua)) {
+      document.getElementById("inAppNotice").style.display = "block";
+    }
+
+    // Tangani hasil jika terjadi fallback redirect
+    getRedirectResult(auth)
+      .then((res) => {
+        if (res && res.user) window.location.href = "dashboard.html";
+      })
+      .catch((err) => {
+        if (err && err.code) {
+          showError("Sesi login terputus di browser HP (" + err.code + "). Pastikan dibuka lewat Safari/Chrome biasa, bukan dari dalam WhatsApp.");
+        }
+      });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) window.location.href = "dashboard.html";
+    });
+
     document.getElementById("authForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       errorBox.style.display = "none";
+      const submitBtn = document.getElementById("submitBtn");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Memproses...";
+
       try {
-        await signInWithEmailAndPassword(auth, document.getElementById("email").value, document.getElementById("password").value);
+        await signInWithEmailAndPassword(
+          auth,
+          document.getElementById("email").value.trim(),
+          document.getElementById("password").value
+        );
         window.location.href = "dashboard.html";
       } catch (err) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Masuk";
         showError("Email atau password salah / belum terdaftar.");
       }
     });
 
-    document.getElementById("googleBtn").addEventListener("click", async () => {
+    googleBtn.addEventListener("click", async () => {
       errorBox.style.display = "none";
+      googleBtn.disabled = true;
+      googleBtnText.textContent = "Menghubungkan Google...";
+
       try {
         await signInWithPopup(auth, provider);
         window.location.href = "dashboard.html";
       } catch (err) {
-        showError("Gagal login Google: " + (err.code || "coba lagi"));
+        googleBtn.disabled = false;
+        googleBtnText.textContent = "Lanjutkan dengan Google";
+
+        if (err.code === "auth/popup-blocked" || err.code === "auth/operation-not-supported-in-this-environment") {
+          await signInWithRedirect(auth, provider);
+        } else if (err.code === "auth/popup-closed-by-user") {
+          showError("Jendela login Google ditutup sebelum selesai.");
+        } else {
+          showError("Gagal login Google (" + (err.code || "error") + "). Jika pakai iPhone, buka lewat Safari dan matikan sementara 'Cegah Pelacakan Lintas-Situs' di Pengaturan Safari.");
+        }
       }
     });
 
