@@ -25,8 +25,12 @@
       <svg class="ico" viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
       <span id="headerTitle">Terita</span>
     </div>
-    <div class="nav-actions">
+<div class="nav-actions">
       <button class="btn-sm btn-install" id="installPwaBtn">Install</button>
+      <button class="btn-icon" id="notifBellBtn" aria-label="Notifikasi" style="position: relative;">
+        <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span id="notifBadgeCount" style="display: none; position: absolute; top: -4px; right: -4px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: #ef4444; color: #fff; font-size: 0.65rem; font-weight: 700; align-items: center; justify-content: center; line-height: 1; border: 2px solid var(--card);">0</span>
+      </button>
       <button class="btn-icon" id="themeToggle" aria-label="Ganti Tema">
         <svg class="ico ico-sm" id="themeIcon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
       </button>
@@ -50,7 +54,7 @@
       </div>
 
       <div class="alert-banner" id="homeAuditAlert" onclick="openFilteredList('DUE')">
-        <span>Ada <strong id="alertDueCount">0</strong> peta masuk jadwal audit 4 bulan.</span>
+<span>Ada <strong id="alertDueCount">0</strong> peta masuk jadwal audit 3 bulan.</span>
         <strong>Cek →</strong>
       </div>
 
@@ -443,10 +447,8 @@
           <svg class="ico ico-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
-
       <div id="mapContainer" class="map-box"></div>
-
-<div id="viewOnlyNotice" class="view-only-banner" style="display: none;">
+      <div id="viewOnlyNotice" class="view-only-banner" style="display: none;">
         <div class="vo-icon">
           <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         </div>
@@ -531,9 +533,9 @@
         </button>
       </div>
 
-<!-- Aksi Audit / Pengembalian -->
+  <!-- Aksi Audit / Pengembalian -->
       <div class="btn-group" id="holderActionRow" style="display: none; margin-top: 0.55rem; margin-bottom: 0;">
-        <button type="button" class="btn-sm" id="auditContinueBtn" style="justify-content: center; padding: 0.65rem;">Audit 4 Bln: Lanjut</button>
+      <button type="button" class="btn-sm" id="auditContinueBtn" style="justify-content: center; padding: 0.65rem;">Perpanjang 3 Bulan</button>
         <button type="button" class="btn-danger-outline" id="finishBtn" style="padding: 0.65rem; font-size: 0.8rem;">Selesai & Kembalikan</button>
       </div>
 
@@ -568,6 +570,30 @@
           <div id="historyList" class="history-list"></div>
         </div>
       </div>
+
+      </div><!-- penutup .modal milik detailModal -->
+  </div><!-- penutup #detailModal -->
+
+  <!-- Modal Notifikasi In-App -->
+  <div class="modal-backdrop" id="notifModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h3 style="font-size: 1.05rem;">Notifikasi Penting</h3>
+          <p id="notifSubtitle" style="font-size: 0.76rem; color: var(--muted); margin-top: 0.15rem;">Ringkasan kartu yang perlu perhatian</p>
+        </div>
+        <button class="close-btn" id="closeNotifModalBtn" type="button">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div id="notifListContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 60vh; overflow-y: auto;"></div>
+
+      <button type="button" class="btn btn-primary" id="notifViewAllDueBtn" style="margin-top: 0.85rem; display: none;">
+        Lihat Semua di Daftar Peta
+      </button>
+    </div>
+  </div>
 
   <script>
     if ("serviceWorker" in navigator) {

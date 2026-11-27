@@ -207,6 +207,11 @@ if (urlParams.get("filter") === "due") {
 }
 });
 
+const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("filter") === "due") {
+    openFilteredList("DUE");
+  }
+
 function isMyTerritory(t) {
   if (hasTipe1Access) return true;
   return Boolean(currentProfile.kdl) && (t.kdl || "") === currentProfile.kdl;
@@ -230,6 +235,13 @@ function isAuditDue(t) {
   if (!t.pemegang || !t.jatuh_tempo_audit) return false;
   const today = getLocalDateStr(0);
   return t.jatuh_tempo_audit <= today;
+}
+
+// Peta dianggap "Dikerjakan" jika sedang dipegang ATAU sudah punya riwayat pengerjaan
+function isWorkedTerritory(t) {
+  const hasActiveHolder = Boolean(t.pemegang && t.pemegang.trim() !== "");
+  const hasHistory = Boolean(t.riwayat && Object.keys(t.riwayat).length > 0);
+  return hasActiveHolder || hasHistory;
 }
 
 function listenMembers() {
@@ -410,6 +422,7 @@ function listenTerritories() {
   onValue(ref(db, "territories"), (snap) => {
     allTerritories = snap.val() || {};
     renderHomeOverview();
+    renderNotifications();
     renderList();
     if (hasBulkAccess) renderBulkList();
     if (selectedId && allTerritories[selectedId] && document.getElementById("detailModal").style.display === "flex") {
@@ -421,7 +434,7 @@ function listenTerritories() {
 function renderHomeOverview() {
   const list = Object.values(allTerritories);
   const mineList = list.filter(t => isMyTerritory(t));
-  const workingCount = mineList.filter(t => t.pemegang && t.pemegang.trim() !== "").length;
+  const workingCount = mineList.filter(t => isWorkedTerritory(t)).length;
   const availCount = mineList.length - workingCount;
   const dueCount = mineList.filter(t => isAuditDue(t)).length;
 
@@ -442,10 +455,10 @@ function renderHomeOverview() {
 
   let html = visibleKdls.map(k => {
     const sub = list.filter(t => t.kdl === k);
-    const active = sub.filter(t => t.pemegang && t.pemegang.trim() !== "").length;
+    const worked = sub.filter(t => isWorkedTerritory(t)).length;
     const dkCount = sub.filter(t => Boolean(t.daerah_kelompok)).length;
     const pwCount = sub.filter(t => Boolean(t.kunjungan_pw)).length;
-    const pct = sub.length > 0 ? Math.round((active / sub.length) * 100) : 0;
+    const pct = sub.length > 0 ? Math.round((worked / sub.length) * 100) : 0;
 
     return `
       <div class="kdl-summary-row" onclick="openFilteredList('${k}')">
@@ -455,7 +468,7 @@ function renderHomeOverview() {
             <span class="dk-tag kdl-inline-tag" onclick="event.stopPropagation(); openFilteredList('${k}', '', 'DK')">Kelompok: ${dkCount}</span>
             <span class="pw-tag kdl-inline-tag" onclick="event.stopPropagation(); openFilteredList('${k}', '', 'PW')">KPW: ${pwCount}</span>
           </div>
-          <span style="color:var(--muted); font-size:0.78rem; flex-shrink:0;">${active} / ${sub.length} peta</span>
+          <span style="color:var(--muted); font-size:0.78rem; flex-shrink:0;">${worked} / ${sub.length} peta</span>
         </div>
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
       </div>`;
@@ -1229,4 +1242,96 @@ document.getElementById("downloadS13Btn")?.addEventListener("click", async () =>
   });
 
   document.getElementById("s13Modal").style.display = "none";
+});
+
+// === NOTIFIKASI IN-APP (LONCENG HEADER) ===
+function renderNotifications() {
+  const list = Object.values(allTerritories);
+  const mineList = list.filter(t => isMyTerritory(t));
+
+  // 1. Kartu yang jatuh tempo audit >= 3 bulan
+  const dueCards = mineList
+    .filter(t => isAuditDue(t))
+    .sort(sortByTerritoryNumber);
+
+  // 2. Kartu yang belum masuk KDL (khusus role Tipe 1)
+  const unassignedCount = hasTipe1Access ? list.filter(t => !t.kdl).length : 0;
+
+  const totalNotif = dueCards.length + (unassignedCount > 0 ? 1 : 0);
+  const badgeEl = document.getElementById("notifBadgeCount");
+  if (badgeEl) {
+    if (totalNotif > 0) {
+      badgeEl.textContent = totalNotif > 99 ? "99+" : totalNotif;
+      badgeEl.style.display = "flex";
+    } else {
+      badgeEl.style.display = "none";
+    }
+  }
+
+  const container = document.getElementById("notifListContainer");
+  const subtitleEl = document.getElementById("notifSubtitle");
+  const viewAllBtn = document.getElementById("notifViewAllDueBtn");
+  if (!container) return;
+
+  if (totalNotif === 0) {
+    if (subtitleEl) subtitleEl.textContent = "Semua kartu terpantau aman";
+    if (viewAllBtn) viewAllBtn.style.display = "none";
+    container.innerHTML = `
+      <div style="padding: 1.75rem 1rem; text-align: center; color: var(--muted); font-size: 0.84rem;">
+        Belum ada notifikasi penting saat ini.
+      </div>
+    `;
+    return;
+  }
+
+  if (subtitleEl) subtitleEl.textContent = `${totalNotif} pemberitahuan perlu ditindaklanjuti`;
+  if (viewAllBtn) viewAllBtn.style.display = dueCards.length > 0 ? "flex" : "none";
+
+  let html = "";
+
+  // Item info jika ada peta belum masuk KDL
+  if (unassignedCount > 0) {
+    html += `
+      <div class="list-item" onclick="closeNotifModal(); openFilteredList('UNASSIGNED');" style="border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.08);">
+        <div class="item-info">
+          <div class="item-title" style="color: var(--warning);">Peta Belum Masuk KDL</div>
+          <div class="item-sub">Ada ${unassignedCount} peta belum diatur wilayah KDL-nya. Ketuk untuk cek.</div>
+        </div>
+        <span class="badge b-due">Info</span>
+      </div>
+    `;
+  }
+
+  // Item daftar kartu jatuh tempo audit 3 bulan
+  html += dueCards.map(t => `
+    <div class="list-item is-due" onclick="closeNotifModal(); openDetail('${t.id}');">
+      <div class="item-left">
+        <span class="item-num">#${t.nomor}</span>
+        <div class="item-info">
+          <div class="item-title">${cleanTerritoryName(t)}</div>
+          <div class="item-sub">${t.pemegang} • Jatuh tempo ${t.jatuh_tempo_audit}</div>
+        </div>
+      </div>
+      <span class="badge b-due">Audit</span>
+    </div>
+  `).join("");
+
+  container.innerHTML = html;
+}
+
+window.closeNotifModal = function() {
+  const modal = document.getElementById("notifModal");
+  if (modal) modal.style.display = "none";
+};
+
+document.getElementById("notifBellBtn")?.addEventListener("click", () => {
+  renderNotifications();
+  document.getElementById("notifModal").style.display = "flex";
+});
+
+document.getElementById("closeNotifModalBtn")?.addEventListener("click", closeNotifModal);
+
+document.getElementById("notifViewAllDueBtn")?.addEventListener("click", () => {
+  closeNotifModal();
+  openFilteredList("DUE");
 });
