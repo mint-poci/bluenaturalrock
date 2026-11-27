@@ -42,6 +42,16 @@ function emailToKey(email) {
   return email.toLowerCase().trim().replace(/\./g, ",");
 }
 
+// Helper format tanggal lokal YYYY-MM-DD (menghindari bug pergeseran jam UTC)
+function getLocalDateStr(offsetDays = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function normalizeMember(m) {
   let roleDaerah = m.role_daerah || "";
   if (!roleDaerah && m.role) {
@@ -191,6 +201,10 @@ onAuthStateChanged(auth, async (user) => {
 
   listenMembers();
   listenTerritories();
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get("filter") === "due") {
+  openFilteredList("DUE");
+}
 });
 
 function isMyTerritory(t) {
@@ -198,16 +212,23 @@ function isMyTerritory(t) {
   return Boolean(currentProfile.kdl) && (t.kdl || "") === currentProfile.kdl;
 }
 
-function addFourMonths(dateStr) {
+// Siklus Audit 3 Bulan
+function addThreeMonths(dateStr) {
   if (!dateStr) return "";
-  const d = new Date(dateStr);
-  d.setMonth(d.getMonth() + 4);
-  return d.toISOString().split("T")[0];
+  const [y, m, day] = dateStr.split("-").map(Number);
+  const d = new Date(y, m - 1 + 3, day);
+  if (d.getDate() !== day) {
+    d.setDate(0);
+  }
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const dt = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${dt}`;
 }
 
 function isAuditDue(t) {
   if (!t.pemegang || !t.jatuh_tempo_audit) return false;
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateStr(0);
   return t.jatuh_tempo_audit <= today;
 }
 
@@ -221,10 +242,15 @@ function listenMembers() {
 
 function renderMembers() {
   const listEl = document.getElementById("memberList");
-  const membersArr = Object.values(allMembers).map(normalizeMember);
+  const membersArr = Object.values(allMembers)
+    .map(normalizeMember)
+    .sort((a, b) => {
+      const nameA = (a.name || a.email.split("@")[0]).trim();
+      const nameB = (b.name || b.email.split("@")[0]).trim();
+      return nameA.localeCompare(nameB, "id", { sensitivity: "base" });
+    });
 
   listEl.innerHTML = membersArr.map(m => {
-    const isSuper = m.email.toLowerCase() === SUPER_ADMIN;
     const displayName = m.name || m.email.split("@")[0];
     const headline = formatMemberHeadline(m);
 
@@ -414,7 +440,7 @@ function renderHomeOverview() {
   const visibleKdls = hasTipe1Access ? KDL_LIST : [currentProfile.kdl];
   document.getElementById("breakdownTitle").textContent = hasTipe1Access ? "Sebaran per KDL" : "Ringkasan Wilayah";
 
-let html = visibleKdls.map(k => {
+  let html = visibleKdls.map(k => {
     const sub = list.filter(t => t.kdl === k);
     const active = sub.filter(t => t.pemegang && t.pemegang.trim() !== "").length;
     const dkCount = sub.filter(t => Boolean(t.daerah_kelompok)).length;
@@ -710,6 +736,7 @@ document.getElementById("applyBulkBtn")?.addEventListener("click", async () => {
       updates[`territories/${id}/status`] = "Tersedia";
       updates[`territories/${id}/tanggal_mulai`] = "";
       updates[`territories/${id}/jatuh_tempo_audit`] = "";
+      updates[`territories/${id}/audit_notified_at`] = "";
       updates[`territories/${id}/catatan`] = "";
     }
   });
@@ -918,6 +945,7 @@ window.openDetail = function(id) {
   document.getElementById("attrBody").style.display = "none";
   document.getElementById("attrChevron").style.transform = "rotate(0deg)";
   document.getElementById("historyDrawer").style.display = "none";
+  document.getElementById("finishConfirmBox").style.display = "none";
   document.getElementById("historyChevron").style.transform = "rotate(0deg)";
 
   inpPemegang.disabled = !canEditTerritory;
@@ -962,8 +990,10 @@ document.getElementById("saveBtn")?.addEventListener("click", async () => {
   const pemegang = document.getElementById("fPemegang").value.trim();
   const tglMulai = document.getElementById("fTglMulai").value;
   let jatuhTempo = "";
+  const isNewCycle = tglMulai !== t.tanggal_mulai || !t.jatuh_tempo_audit;
+
   if (pemegang && tglMulai) {
-    jatuhTempo = (tglMulai === t.tanggal_mulai && t.jatuh_tempo_audit) ? t.jatuh_tempo_audit : addFourMonths(tglMulai);
+    jatuhTempo = isNewCycle ? addThreeMonths(tglMulai) : t.jatuh_tempo_audit;
   }
 
   const payload = {
@@ -978,6 +1008,10 @@ document.getElementById("saveBtn")?.addEventListener("click", async () => {
     kunjungan_pw: document.getElementById("fKunjunganPw").checked,
     daerah_kelompok: document.getElementById("fDaerahKelompok").checked
   };
+
+  if (!pemegang || isNewCycle) {
+    payload.audit_notified_at = "";
+  }
 
   if (hasTipe1Access) payload.kdl = document.getElementById("fKdlPeta").value;
 
@@ -1019,37 +1053,77 @@ document.getElementById("auditContinueBtn")?.addEventListener("click", async () 
   if (!selectedId || !canEditTerritory) return;
   const pemegang = document.getElementById("fPemegang").value.trim();
   if (!pemegang) return;
-  const today = new Date().toISOString().split("T")[0];
-  const nextDue = addFourMonths(today);
+  const today = getLocalDateStr(0);
+  const nextDue = addThreeMonths(today);
 
   await push(ref(db, `territories/${selectedId}/riwayat`), {
     pemegang,
     tanggal_mulai: document.getElementById("fTglMulai").value || today,
-    keterangan: `Audit 4 Bln (${today}): Lanjut`,
+    keterangan: `Audit 3 Bln (${today}): Lanjut`,
     tanggal_kembali: today
   });
   await update(ref(db, `territories/${selectedId}`), {
     tanggal_mulai: today,
-    jatuh_tempo_audit: nextDue
+    jatuh_tempo_audit: nextDue,
+    audit_notified_at: ""
   });
   openDetail(selectedId);
 });
 
-document.getElementById("finishBtn")?.addEventListener("click", async () => {
+// 1. Klik "Selesai & Kembalikan" -> buka pemilih tanggal (default Hari Ini)
+document.getElementById("finishBtn")?.addEventListener("click", () => {
   if (!selectedId || !canEditTerritory) return;
   const pemegang = document.getElementById("fPemegang").value.trim();
   if (!pemegang) return;
-  const today = new Date().toISOString().split("T")[0];
+
+  const tglInput = document.getElementById("fTglSelesai");
+  tglInput.value = getLocalDateStr(0);
+  tglInput.max = getLocalDateStr(0);
+
+  document.getElementById("holderActionRow").style.display = "none";
+  document.getElementById("finishConfirmBox").style.display = "block";
+});
+
+// 2. Pintasan cepat tanggal "Kemarin" & "Hari Ini"
+document.getElementById("setFinishYesterdayBtn")?.addEventListener("click", () => {
+  document.getElementById("fTglSelesai").value = getLocalDateStr(-1);
+});
+
+document.getElementById("setFinishTodayBtn")?.addEventListener("click", () => {
+  document.getElementById("fTglSelesai").value = getLocalDateStr(0);
+});
+
+// 3. Klik "Batal" -> kembali ke tombol awal
+document.getElementById("cancelFinishBtn")?.addEventListener("click", () => {
+  document.getElementById("finishConfirmBox").style.display = "none";
+  document.getElementById("holderActionRow").style.display = "grid";
+});
+
+// 4. Klik "Konfirmasi Selesai" -> simpan riwayat & reset status peta
+document.getElementById("confirmFinishBtn")?.addEventListener("click", async () => {
+  if (!selectedId || !canEditTerritory) return;
+  const pemegang = document.getElementById("fPemegang").value.trim();
+  if (!pemegang) return;
+
+  const tglSelesai = document.getElementById("fTglSelesai").value || getLocalDateStr(0);
 
   await push(ref(db, `territories/${selectedId}/riwayat`), {
     pemegang,
-    tanggal_mulai: document.getElementById("fTglMulai").value || today,
+    tanggal_mulai: document.getElementById("fTglMulai").value || tglSelesai,
     keterangan: "Selesai & Dikembalikan",
-    tanggal_kembali: today
+    tanggal_kembali: tglSelesai
   });
+
   await update(ref(db, `territories/${selectedId}`), {
-    pemegang: "", status: "Tersedia", tanggal_mulai: "", jatuh_tempo_audit: "", catatan: ""
+    pemegang: "",
+    status: "Tersedia",
+    tanggal_mulai: "",
+    jatuh_tempo_audit: "",
+    audit_notified_at: "",
+    catatan: ""
   });
+
+  document.getElementById("finishConfirmBox").style.display = "none";
   openDetail(selectedId);
 });
 

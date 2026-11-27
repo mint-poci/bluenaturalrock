@@ -531,10 +531,28 @@
         </button>
       </div>
 
-      <!-- Aksi Audit / Pengembalian -->
+<!-- Aksi Audit / Pengembalian -->
       <div class="btn-group" id="holderActionRow" style="display: none; margin-top: 0.55rem; margin-bottom: 0;">
         <button type="button" class="btn-sm" id="auditContinueBtn" style="justify-content: center; padding: 0.65rem;">Audit 4 Bln: Lanjut</button>
         <button type="button" class="btn-danger-outline" id="finishBtn" style="padding: 0.65rem; font-size: 0.8rem;">Selesai & Kembalikan</button>
+      </div>
+
+      <!-- Panel Konfirmasi Tanggal Selesai -->
+      <div id="finishConfirmBox" style="display: none; margin-top: 0.65rem; padding: 0.75rem; border-radius: 12px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+          <label for="fTglSelesai" style="font-size: 0.78rem; font-weight: 600; color: #fca5a5; margin: 0;">Tanggal Selesai & Dikembalikan</label>
+          <div style="display: flex; gap: 0.35rem;">
+            <button type="button" id="setFinishYesterdayBtn" class="btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;">Kemarin</button>
+            <button type="button" id="setFinishTodayBtn" class="btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;">Hari Ini</button>
+          </div>
+        </div>
+        <div class="field">
+        <input type="date" id="fTglSelesai" style="width: 100%; margin-bottom: 0.55rem;">
+        </div>
+        <div class="btn-group" style="margin: 0;">
+          <button type="button" class="btn-sm" id="cancelFinishBtn" style="justify-content: center; padding: 0.55rem;">Batal</button>
+          <button type="button" class="btn-danger-outline" id="confirmFinishBtn" style="padding: 0.55rem; font-size: 0.8rem; background: rgba(239, 68, 68, 0.2); font-weight: 600;">Konfirmasi Selesai</button>
+        </div>
       </div>
 
       <!-- Riwayat Pengerjaan (Subtle & Bisa Dilipat di Paling Bawah) -->
