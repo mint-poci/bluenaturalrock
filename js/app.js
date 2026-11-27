@@ -17,6 +17,7 @@ const TIPE2_LABELS = {
 };
 
 const KDL_LIST = ["KDL Pemalang", "KDL Tegal Timur", "KDL Tegal Barat"];
+const WELCOME_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzeUTW8a2VnDdj9qakYhyOiwZFtI3AakLMpLIV1KqBl9mGxtTRntneLUsJj7iWlxmCpbQ/exec";
 
 let currentUser = null;
 let currentProfile = { name: "Eden", role_daerah: "hamba_daerah", kdl: "", role_kdl: "" };
@@ -345,10 +346,33 @@ document.getElementById("addMemberBtn")?.addEventListener("click", async () => {
     if (conflict) return alert(`${kdl} sudah memiliki ${TIPE2_LABELS[conflict.role_kdl]} (${conflict.name || conflict.email}).`);
   }
 
-  await set(ref(db, `users/${emailToKey(email)}`), {
-    email, name: name || email.split("@")[0], role_daerah: roleDaerah, kdl, role_kdl: roleKdl
-  });
+  const finalName = name || email.split("@")[0];
+  const newMemberData = {
+    email,
+    name: finalName,
+    role_daerah: roleDaerah,
+    kdl,
+    role_kdl: roleKdl
+  };
+
+  await set(ref(db, `users/${emailToKey(email)}`), newMemberData);
   document.getElementById("addMemberModal").style.display = "none";
+
+  // Kirim email selamat datang secara otomatis di latar belakang
+  if (WELCOME_WEBHOOK_URL && WELCOME_WEBHOOK_URL.startsWith("https://")) {
+    const roleSummary = formatMemberHeadline(normalizeMember(newMemberData));
+    fetch(WELCOME_WEBHOOK_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        action: "welcome_member",
+        email,
+        name: finalName,
+        role_summary: roleSummary
+      })
+    }).catch(() => {});
+  }
 });
 
 window.openEditMemberModal = function(email) {
