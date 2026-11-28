@@ -1,0 +1,3246 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const modeParam = params.get("mode");
+      if (modeParam === "desktop") sessionStorage.setItem("forceMode", "desktop");
+      else if (modeParam === "mobile") sessionStorage.removeItem("forceMode");
+
+      function syncViewportTarget() {
+        const w = Math.max(window.innerWidth || 0, document.documentElement.clientWidth || 0);
+        if (w < 1024 && sessionStorage.getItem("forceMode") !== "desktop") {
+          window.location.replace("dashboard.html" + window.location.search);
+        }
+      }
+
+      syncViewportTarget();
+
+      let resizeTimer;
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(syncViewportTarget, 150);
+      });
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Terita">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%232563eb'/%3E%3Cpath d='M128 160l85-32 86 32 85-32v224l-85 32-86-32-85 32V160z' fill='none' stroke='%23ffffff' stroke-width='28' stroke-linejoin='round'/%3E%3Cpath d='M213 128v224M299 160v224' stroke='%23ffffff' stroke-width='28'/%3E%3C/svg%3E">
+  <title>Terita — Desktop Workspace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg-mesh: radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.14) 0px, transparent 50%),
+                 radial-gradient(at 100% 15%, rgba(16, 185, 129, 0.12) 0px, transparent 50%),
+                 radial-gradient(at 50% 100%, rgba(99, 102, 241, 0.12) 0px, transparent 55%),
+                 #eef2f9;
+      --glass-bg: rgba(255, 255, 255, 0.78);
+      --glass-strong: rgba(255, 255, 255, 0.92);
+      --glass-border: rgba(226, 232, 240, 0.9);
+      --glass-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
+      --input-bg: #ffffff;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --purple: #7c3aed;
+      --hover: rgba(37, 99, 235, 0.06);
+    }
+
+    [data-theme="dark"] {
+      --bg-mesh: radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.22) 0px, transparent 55%),
+                 radial-gradient(at 100% 20%, rgba(16, 185, 129, 0.14) 0px, transparent 50%),
+                 radial-gradient(at 50% 100%, rgba(79, 70, 229, 0.18) 0px, transparent 60%),
+                 #090e1a;
+      --glass-bg: rgba(22, 32, 50, 0.78);
+      --glass-strong: rgba(15, 23, 42, 0.94);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+      --input-bg: #1e293b;
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #3b82f6;
+      --purple: #a78bfa;
+      --hover: rgba(59, 130, 246, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background: var(--bg-mesh);
+      background-attachment: fixed;
+      color: var(--text);
+      min-height: 100vh;
+      display: none;
+      flex-direction: column;
+    }
+
+    svg.ico {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    svg.ico-sm {
+      width: 15px;
+      height: 15px;
+    }
+
+    /* TOP HEADER */
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 60px;
+      padding: 0 1.5rem;
+      background: var(--glass-strong);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      font-size: 1.08rem;
+      letter-spacing: -0.01em;
+    }
+
+    .brand svg {
+      color: var(--primary);
+    }
+
+    .desktop-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: rgba(148, 163, 184, 0.14);
+      padding: 0.25rem;
+      border-radius: 12px;
+    }
+
+    .dtab-btn {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      padding: 0.42rem 0.9rem;
+      border-radius: 9px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.15s ease;
+    }
+
+    .dtab-btn:hover {
+      color: var(--text);
+    }
+
+    .dtab-btn.active {
+      background: var(--card);
+      color: var(--primary);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--primary);
+      background: var(--hover);
+    }
+
+    .btn-sm {
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.78rem;
+      padding: 0.46rem 0.8rem;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.38rem;
+      transition: all 0.15s ease;
+    }
+
+    .btn-sm:hover {
+      border-color: var(--primary);
+      background: var(--hover);
+    }
+
+    .btn-logout {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      border-color: rgba(239, 68, 68, 0.25);
+    }
+
+    .btn-logout:hover {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .notif-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 4px;
+      border-radius: 999px;
+      background: var(--danger);
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--card);
+    }
+
+    /* MAIN CONTAINER */
+    main {
+      width: 100%;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 1.25rem 1.5rem 2rem;
+      flex: 1;
+    }
+
+    /* HALAMAN 1: BERANDA DESKTOP */
+    .home-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .welcome-compact {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.92) 0%, rgba(29, 78, 216, 0.88) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.22);
+      color: #ffffff;
+      border-radius: 20px;
+      padding: 1.35rem 1.5rem;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .welcome-time {
+      font-size: 0.8rem;
+      opacity: 0.88;
+      font-weight: 500;
+    }
+
+    .welcome-name {
+      font-size: 1.45rem;
+      font-weight: 700;
+      margin-top: 0.15rem;
+    }
+
+    .welcome-subrole {
+      font-size: 0.78rem;
+      opacity: 0.92;
+      margin-top: 0.25rem;
+      font-weight: 500;
+    }
+
+    .kdl-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.76rem;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      padding: 0.35rem 0.8rem;
+      border-radius: 99px;
+      white-space: nowrap;
+    }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.85rem;
+      margin-bottom: 1rem;
+    }
+
+    .ov-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+      border-radius: 18px;
+      padding: 1.15rem 0.8rem;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.12s ease, border-color 0.15s ease;
+    }
+
+    .ov-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+
+    .ov-card strong {
+      display: block;
+      font-size: 1.65rem;
+      font-weight: 700;
+    }
+
+    .ov-card span {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+      font-weight: 600;
+    }
+
+    .alert-banner {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.28);
+      color: var(--danger);
+      border-radius: 16px;
+      padding: 0.95rem 1.15rem;
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+      display: none;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.6rem;
+      cursor: pointer;
+    }
+
+    .section-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+      border-radius: 20px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .section-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.85rem;
+      gap: 0.5rem;
+    }
+
+    .section-title {
+      font-size: 0.96rem;
+      font-weight: 700;
+    }
+
+    .kdl-summary-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      padding: 0.8rem 0.6rem;
+      border-bottom: 1px solid var(--glass-border);
+      font-size: 0.86rem;
+      cursor: pointer;
+      border-radius: 12px;
+      transition: background 0.12s;
+    }
+
+    .kdl-summary-row:hover {
+      background: var(--hover);
+    }
+
+    .kdl-summary-row:last-child {
+      border-bottom: none;
+    }
+
+    .kdl-row-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .kdl-title-inline {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 6px;
+      background: rgba(148, 163, 184, 0.22);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 99px;
+      transition: width 0.3s ease;
+    }
+
+    .s13-feature-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(37, 99, 235, 0.28);
+      box-shadow: var(--glass-shadow);
+      border-radius: 20px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .s13-card-top {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      margin-bottom: 0.95rem;
+    }
+
+    .s13-doc-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(59, 130, 246, 0.24));
+      border: 1px solid rgba(37, 99, 235, 0.28);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .s13-last-log {
+      margin-top: 0.8rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--glass-border);
+      font-size: 0.76rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    /* HALAMAN 2: SPLIT-VIEW KELOLA PETA */
+    .workspace-split {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 1.25rem;
+      height: calc(100vh - 96px);
+      align-items: stretch;
+    }
+
+    .list-column {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .search-bar-wrap {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.65rem;
+      align-items: center;
+    }
+
+    .search-input-box {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .search-input-box svg {
+      position: absolute;
+      left: 0.8rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .search-input-box input {
+      width: 100%;
+      height: 42px;
+      padding: 0 0.85rem 0 2.35rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 0.84rem;
+      outline: none;
+    }
+
+    .search-input-box input:focus {
+      border-color: var(--primary);
+    }
+
+    .btn-filter-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      height: 42px;
+      padding: 0 0.9rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .btn-filter-trigger.has-active {
+      border-color: var(--primary);
+      background: rgba(37, 99, 235, 0.08);
+      color: var(--primary);
+    }
+
+    .filter-count-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 0.68rem;
+      font-weight: 700;
+    }
+
+    .active-filter-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .active-filter-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .af-tag {
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: rgba(37, 99, 235, 0.12);
+      color: var(--primary);
+    }
+
+    .btn-reset-mini {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .list-container {
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: var(--glass-shadow);
+      border-radius: 18px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.8rem 0.95rem;
+      border-bottom: 1px solid var(--glass-border);
+      cursor: pointer;
+      gap: 0.65rem;
+      transition: background 0.12s;
+    }
+
+    .list-item:last-child {
+      border-bottom: none;
+    }
+
+    .list-item:hover {
+      background: var(--hover);
+    }
+
+    .list-item.is-due {
+      border-left: 4px solid var(--danger);
+    }
+
+    .list-item.is-selected {
+      background: rgba(37, 99, 235, 0.12);
+      border-left: 4px solid var(--primary);
+    }
+
+    .item-left {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .item-num {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--primary);
+      background: rgba(37, 99, 235, 0.12);
+      padding: 0.28rem 0.5rem;
+      border-radius: 8px;
+      flex-shrink: 0;
+      min-width: 2.5rem;
+      text-align: center;
+    }
+
+    .item-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .item-title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+
+    .item-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .item-sub {
+      font-size: 0.74rem;
+      color: var(--muted);
+      margin-top: 0.14rem;
+    }
+
+    .pw-tag, .dk-tag {
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 0.13rem 0.45rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .pw-tag {
+      background: rgba(124, 58, 237, 0.14);
+      color: var(--purple);
+      border: 1px solid rgba(124, 58, 237, 0.24);
+    }
+
+    .dk-tag {
+      background: rgba(16, 185, 129, 0.14);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.28);
+    }
+
+    [data-theme="dark"] .dk-tag {
+      color: #34d399;
+    }
+
+    .badge {
+      font-size: 0.69rem;
+      font-weight: 700;
+      padding: 0.24rem 0.58rem;
+      border-radius: 99px;
+      flex-shrink: 0;
+    }
+
+    .b-avail { background: rgba(16, 185, 129, 0.14); color: var(--success); }
+    .b-work { background: rgba(37, 99, 235, 0.14); color: var(--primary); }
+    .b-done { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+    [data-theme="dark"] .b-done { color: #fbbf24; }
+    .b-due { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+
+    /* PANEL INSPECTOR KANAN */
+    .inspector-column {
+      height: 100%;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .empty-inspector {
+      flex: 1;
+      background: var(--glass-bg);
+      border: 1.5px dashed var(--border);
+      border-radius: 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2.5rem;
+      color: var(--muted);
+    }
+
+    .empty-inspector-icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      background: rgba(37, 99, 235, 0.12);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+
+    .detail-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: var(--glass-shadow);
+      border-radius: 22px;
+      padding: 1.35rem 1.5rem;
+      display: none;
+    }
+
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .kdl-badge-mini {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 8px;
+      background: rgba(37, 99, 235, 0.12);
+      color: var(--primary);
+      margin-bottom: 0.35rem;
+    }
+
+    .detail-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-shrink: 0;
+    }
+
+    .close-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #mapContainer {
+      height: 230px;
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      margin-bottom: 1rem;
+      z-index: 1;
+    }
+
+    .field {
+      margin-bottom: 0.85rem;
+      min-width: 0;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 0.32rem;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 0.86rem;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--primary);
+    }
+
+    .field input:disabled,
+    .field select:disabled,
+    .field textarea:disabled {
+      opacity: 0.68;
+      cursor: not-allowed;
+    }
+
+    .holder-date-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(150px, 1fr);
+      gap: 0.65rem;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+    }
+
+    .attr-panel {
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: var(--input-bg);
+      overflow: hidden;
+    }
+
+    .attr-toggle-btn {
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 0.7rem 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .attr-body {
+      padding: 0.75rem 0.9rem 0.9rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 13px;
+      border: none;
+      font-weight: 600;
+      font-size: 0.86rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.42rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.24);
+    }
+
+    .btn-wa {
+      background: rgba(37, 211, 102, 0.15);
+      color: #16a34a;
+      border: 1px solid rgba(37, 211, 102, 0.35);
+    }
+
+    [data-theme="dark"] .btn-wa {
+      color: #4ade80;
+    }
+
+    .btn-danger-outline {
+      width: 100%;
+      padding: 0.68rem;
+      border-radius: 13px;
+      font-weight: 600;
+      font-size: 0.82rem;
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      cursor: pointer;
+    }
+
+    .view-only-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      padding: 0.68rem 0.85rem;
+      margin-bottom: 0.85rem;
+      border-radius: 12px;
+      background: rgba(37, 99, 235, 0.08);
+      border: 1px solid rgba(37, 99, 235, 0.22);
+    }
+
+    .vo-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(37, 99, 235, 0.14);
+      color: var(--primary);
+      flex-shrink: 0;
+    }
+
+    .vo-text strong {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--primary);
+    }
+
+    .vo-text span {
+      display: block;
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+
+    .subtle-history-wrap {
+      margin-top: 0.95rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .subtle-history-bar {
+      width: 100%;
+      background: none;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      font-size: 0.76rem;
+      color: var(--muted);
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .hist-item {
+      font-size: 0.78rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .hist-item:last-child {
+      border-bottom: none;
+    }
+
+    /* HALAMAN 3: PETA SEBARAN KESELURUHAN */
+    .fullmap-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 0.85rem 1.1rem;
+      margin-bottom: 0.9rem;
+      box-shadow: var(--glass-shadow);
+    }
+
+    .fullmap-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .fullmap-controls select {
+      height: 36px;
+      padding: 0 0.75rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .map-legend {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.9rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .map-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .map-legend i {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    #fullMapCanvas {
+      width: 100%;
+      height: calc(100vh - 165px);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      box-shadow: var(--glass-shadow);
+      z-index: 1;
+    }
+
+    /* HALAMAN 4: ANGGOTA & BULK */
+    .centered-page {
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    .member-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.85rem;
+      padding: 0.9rem 0.65rem;
+      border-bottom: 1px solid var(--glass-border);
+      cursor: pointer;
+      border-radius: 12px;
+      transition: background 0.12s;
+    }
+
+    .member-row:hover {
+      background: var(--hover);
+    }
+
+    .member-row:last-child {
+      border-bottom: none;
+    }
+
+    .member-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(99, 102, 241, 0.18));
+      color: var(--primary);
+      border: 1px solid rgba(37, 99, 235, 0.22);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+
+    .member-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .member-name {
+      font-size: 0.94rem;
+      font-weight: 700;
+    }
+
+    .member-headline {
+      font-size: 0.78rem;
+      font-weight: 600;
+      opacity: 0.86;
+      margin-top: 0.12rem;
+    }
+
+    .member-email {
+      font-size: 0.73rem;
+      color: var(--muted);
+      margin-top: 0.1rem;
+    }
+
+    .role-tag {
+      font-size: 0.68rem;
+      padding: 0.18rem 0.55rem;
+      border-radius: 99px;
+      background: rgba(37, 99, 235, 0.12);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .bulk-range-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .bulk-filter-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.55rem;
+      margin-bottom: 0.7rem;
+    }
+
+    .bulk-input, .bulk-select {
+      width: 100%;
+      height: 40px;
+      padding: 0 0.8rem;
+      border-radius: 11px;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 0.82rem;
+      outline: none;
+    }
+
+    .btn-bulk-primary {
+      height: 40px;
+      padding: 0 1.1rem;
+      border-radius: 11px;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .bulk-quick-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-bulk-ghost {
+      padding: 0.45rem 0.8rem;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .bulk-check {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .bulk-action-bar {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 1.5rem;
+      width: calc(100% - 3rem);
+      max-width: 640px;
+      background: var(--card);
+      border: 1.5px solid var(--primary);
+      border-radius: 16px;
+      padding: 0.65rem 1rem;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.22);
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      z-index: 120;
+    }
+
+    .bulk-action-bar select {
+      height: 36px;
+      padding: 0 0.65rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    /* MODAL POPUP */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 250;
+    }
+
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 88vh;
+      overflow-y: auto;
+      padding: 1.35rem;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.9rem;
+      gap: 0.5rem;
+    }
+
+    .fchip-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
+    }
+
+    .fchip {
+      padding: 0.55rem 0.7rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .fchip.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP NAVIGATION -->
+  <nav class="top-nav">
+    <div class="nav-left">
+      <div class="brand">
+        <svg class="ico" viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+        <span>Terita</span>
+      </div>
+
+      <div class="desktop-tabs">
+        <button class="dtab-btn active" data-page="pageHome">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Beranda</span>
+        </button>
+        <button class="dtab-btn" data-page="pageTerritories">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+          <span>Kelola Peta</span>
+        </button>
+        <button class="dtab-btn" data-page="pageFullMap">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 6.9 8 11.7z"/></svg>
+          <span>Peta Sebaran</span>
+        </button>
+        <button class="dtab-btn" data-page="pageMembers" id="dtabMembers" style="display: none;">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>Anggota</span>
+        </button>
+        <button class="dtab-btn" data-page="pageBulk" id="dtabBulk" style="display: none;">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span>Bulk Editor</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <button class="btn-sm" id="switchMobileBtn" title="Beralih ke Tampilan Mobile">
+        <svg class="ico ico-sm" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        <span>Mobile</span>
+      </button>
+      <button class="btn-icon" id="notifBellBtn" aria-label="Notifikasi" style="position: relative;">
+        <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span id="notifBadgeCount" class="notif-badge">0</span>
+      </button>
+      <button class="btn-icon" id="themeToggle" aria-label="Ganti Tema">
+        <svg class="ico ico-sm" id="themeIcon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+      </button>
+      <button class="btn-sm btn-logout" id="logoutBtn">Keluar</button>
+    </div>
+  </nav>
+
+  <main>
+    <!-- HALAMAN 1: BERANDA DESKTOP -->
+    <section id="pageHome">
+      <div class="home-grid">
+        <div class="home-left-stack">
+          <div class="welcome-compact">
+            <div style="min-width: 0; flex: 1; z-index: 1;">
+              <div class="welcome-time" id="greetingTime">Selamat siang,</div>
+              <div class="welcome-name" id="greetingName">Memuat...</div>
+              <div class="welcome-subrole" id="greetingRolesText" style="display: none;"></div>
+            </div>
+            <div class="kdl-pill">
+              <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span id="greetingKdlText">Semua KDL</span>
+            </div>
+          </div>
+
+          <div class="alert-banner" id="homeAuditAlert" onclick="openFilteredList('DUE')">
+            <span>Ada <strong id="alertDueCount">0</strong> peta masuk jadwal audit 3 bulan.</span>
+            <strong>Cek Sekarang →</strong>
+          </div>
+
+          <div class="overview-grid">
+            <div class="ov-card" onclick="openFilteredList('ALL')">
+              <strong id="ovTotal">0</strong>
+              <span>Total Peta</span>
+            </div>
+            <div class="ov-card" onclick="openFilteredList('ALL', 'work')">
+              <strong id="ovWork" style="color: var(--primary);">0</strong>
+              <span>Dikerjakan</span>
+            </div>
+            <div class="ov-card" onclick="openFilteredList('ALL', 'avail')">
+              <strong id="ovAvail" style="color: var(--success);">0</strong>
+              <span>Tersedia</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kolom Kanan Beranda: Sebaran per KDL -->
+        <div class="section-card">
+          <div class="section-header-row">
+            <div class="section-title" id="breakdownTitle">Sebaran per KDL</div>
+            <span style="font-size: 0.74rem; color: var(--muted);">Klik baris untuk buka daftar</span>
+          </div>
+          <div id="kdlBreakdown"></div>
+        </div>
+      </div>
+
+      <!-- S-13 Export Card (Lebar Penuh di Bawah Grid Utama) -->
+      <div class="s13-feature-card" id="s13FeatureCard" style="display: none;">
+        <div class="s13-horizontal-row">
+          <div class="s13-card-top">
+            <div class="s13-doc-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="8" y1="13" x2="16" y2="13"/>
+                <line x1="8" y1="17" x2="16" y2="17"/>
+                <line x1="8" y1="9" x2="10" y2="9"/>
+              </svg>
+            </div>
+            <div style="min-width: 0; flex: 1;">
+              <div style="font-size: 0.98rem; font-weight: 700;">Catatan Daerah Tugas (S-13)</div>
+              <div style="font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem;">Cetak formulir tabel resmi seluruh KDL per tahun dinas (1 Sept – 31 Agt)</div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" id="openS13ModalBtn" type="button" style="width: auto; padding: 0.78rem 1.35rem; flex-shrink: 0;">
+            <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Buat & Download PDF S-13</span>
+          </button>
+        </div>
+
+        <div class="s13-last-log" id="toggleS13LogBtn" style="cursor: pointer; justify-content: space-between; user-select: none;">
+          <div style="display: flex; align-items: center; gap: 0.45rem; min-width: 0; flex: 1;">
+            <svg class="ico ico-sm" style="flex-shrink: 0;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span id="s13LastLogText" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Belum ada riwayat generate S-13.</span>
+          </div>
+          <svg class="ico ico-sm" id="s13LogChevron" style="flex-shrink: 0; transition: transform 0.2s ease; display: none;" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+
+        <div id="s13LogList" style="display: none; margin-top: 0.65rem; padding-top: 0.55rem; border-top: 1px solid var(--border); flex-direction: column; gap: 0.35rem;"></div>
+      </div>
+    </section>
+
+    <!-- HALAMAN 2: SPLIT-VIEW KELOLA PETA -->
+    <section id="pageTerritories" style="display: none;">
+      <div class="workspace-split">
+        <!-- Kolom Kiri: Pencarian, Filter & Daftar Kartu -->
+        <div class="list-column">
+          <div class="search-bar-wrap">
+            <div class="search-input-box">
+              <svg class="ico ico-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="searchInput" placeholder="Cari nomor / nama / pemegang...">
+            </div>
+            <button class="btn-filter-trigger" id="openFilterModalBtn" type="button">
+              <svg class="ico ico-sm" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
+              <span>Filter</span>
+              <span class="filter-count-badge" id="filterCountBadge" style="display: none;">0</span>
+            </button>
+          </div>
+
+          <div class="active-filter-strip" id="activeFilterStrip" style="display: none;">
+            <div class="active-filter-tags" id="activeFilterTags"></div>
+            <button type="button" class="btn-reset-mini" id="resetFilterQuickBtn">Reset</button>
+          </div>
+
+          <div class="list-container" id="territoryList">
+            <div style="padding: 2rem; text-align: center; color: var(--muted); font-size: 0.85rem;">Memuat daftar peta...</div>
+          </div>
+        </div>
+
+        <!-- Kolom Kanan: Inspector & Editor Peta -->
+        <div class="inspector-column">
+          <div class="empty-inspector" id="emptyInspector">
+            <div class="empty-inspector-icon">
+              <svg class="ico" style="width: 26px; height: 26px;" viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+            </div>
+            <h3 style="color: var(--text); font-size: 1.05rem; margin-bottom: 0.35rem;">Pilih Kartu Peta di Sebelah Kiri</h3>
+            <p style="font-size: 0.84rem; max-width: 380px; line-height: 1.5;">Klik salah satu daerah untuk melihat poligon peta, membuka Google My Maps, atau memperbarui pemegang dan riwayat pengerjaan.</p>
+          </div>
+
+          <div class="detail-card" id="detailCard">
+            <div class="detail-header">
+              <div style="min-width: 0; flex: 1;">
+                <span class="kdl-badge-mini" id="mKdlBadge">KDL Pemalang</span>
+                <h2 id="mNama" style="font-size: 1.25rem; line-height: 1.3;">#1 — Nama Daerah</h2>
+              </div>
+              <div class="detail-header-actions">
+                <button type="button" class="btn-sm" id="openMyMapsBtn" style="display: none; border-color: rgba(37, 99, 235, 0.35); color: var(--primary);">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  <span id="openMyMapsText">Buka My Maps</span>
+                </button>
+                <button type="button" class="btn-sm" id="viewOnFullMapBtn">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+                  <span>Peta Sebaran</span>
+                </button>
+                <button class="close-btn" id="closeDetailBtn" type="button" title="Tutup Panel">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div id="mapContainer"></div>
+
+            <div id="viewOnlyNotice" class="view-only-banner" style="display: none;">
+              <div class="vo-icon">
+                <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </div>
+              <div class="vo-text">
+                <strong>Mode Lihat Saja</strong>
+                <span>Hubungi Pengawas atau Hamba Kelompok untuk memperbarui data peta.</span>
+              </div>
+            </div>
+
+            <div class="holder-date-grid">
+              <div class="field">
+                <label for="fPemegang">Pemegang / Yang Mengerjakan</label>
+                <input type="text" id="fPemegang" placeholder="Kosongkan jika tersedia">
+              </div>
+              <div class="field">
+                <label for="fTglMulai">Mulai</label>
+                <input type="date" id="fTglMulai">
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="fCatatan">Catatan</label>
+              <textarea id="fCatatan" rows="3" placeholder="Tulis catatan atau keterangan tambahan..."></textarea>
+            </div>
+
+            <div class="attr-panel" id="attrPanel">
+              <button type="button" class="attr-toggle-btn" id="toggleAttrBtn">
+                <span>Edit Info & Atribut Peta</span>
+                <svg class="ico ico-sm" id="attrChevron" viewBox="0 0 24 24" style="transition: transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="attr-body" id="attrBody" style="display: none;">
+                <div class="field">
+                  <label for="fNamaDaerah">Nama Daerah</label>
+                  <input type="text" id="fNamaDaerah">
+                </div>
+                <div class="field-row">
+                  <div class="field">
+                    <label for="fKategori">Kategori</label>
+                    <select id="fKategori">
+                      <option value="Umum">Umum</option>
+                      <option value="Pertokoan">Pertokoan</option>
+                      <option value="Perumahan">Perumahan</option>
+                      <option value="Kampung / Desa">Kampung / Desa</option>
+                    </select>
+                  </div>
+                  <div class="field" id="fKdlField">
+                    <label for="fKdlPeta">Wilayah KDL</label>
+                    <select id="fKdlPeta">
+                      <option value="">Belum diatur</option>
+                      <option value="KDL Pemalang">KDL Pemalang</option>
+                      <option value="KDL Tegal Timur">KDL Tegal Timur</option>
+                      <option value="KDL Tegal Barat">KDL Tegal Barat</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="fMyMapsUrl">Link Google My Maps (Opsional)</label>
+                  <input type="url" id="fMyMapsUrl" placeholder="https://www.google.com/maps/d/...">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.55rem; margin-top: 0.35rem;">
+                  <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: var(--text); margin: 0; cursor: pointer;">
+                    <input type="checkbox" id="fKunjunganPw" style="width: auto; accent-color: var(--primary);">
+                    <span>Tandai sebagai Kunjungan PW</span>
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: var(--text); margin: 0; cursor: pointer;">
+                    <input type="checkbox" id="fDaerahKelompok" style="width: auto; accent-color: var(--primary);">
+                    <span>Tandai sebagai Daerah Kelompok</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="btn-group" id="primaryActionRow" style="margin-top: 0.9rem;">
+              <button type="button" class="btn btn-primary" id="saveBtn">Simpan</button>
+              <button type="button" class="btn btn-wa" id="shareWaBtn">
+                <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                <span>Kirim WA</span>
+              </button>
+            </div>
+
+            <div class="btn-group" id="holderActionRow" style="display: none; margin-top: 0.6rem;">
+              <button type="button" class="btn-sm" id="auditContinueBtn" style="justify-content: center; padding: 0.68rem;">Perpanjang 3 Bulan</button>
+              <button type="button" class="btn-danger-outline" id="finishBtn">Selesai & Kembalikan</button>
+            </div>
+
+            <div id="finishConfirmBox" style="display: none; margin-top: 0.75rem; padding: 0.85rem; border-radius: 14px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <label for="fTglSelesai" style="font-size: 0.8rem; font-weight: 600; color: var(--danger); margin: 0;">Tanggal Selesai & Dikembalikan</label>
+                <div style="display: flex; gap: 0.4rem;">
+                  <button type="button" id="setFinishYesterdayBtn" class="btn-sm" style="padding: 0.25rem 0.55rem; font-size: 0.74rem;">Kemarin</button>
+                  <button type="button" id="setFinishTodayBtn" class="btn-sm" style="padding: 0.25rem 0.55rem; font-size: 0.74rem;">Hari Ini</button>
+                </div>
+              </div>
+              <div class="field">
+                <input type="date" id="fTglSelesai">
+              </div>
+              <div class="btn-group">
+                <button type="button" class="btn-sm" id="cancelFinishBtn" style="justify-content: center; padding: 0.6rem;">Batal</button>
+                <button type="button" class="btn-danger-outline" id="confirmFinishBtn" style="padding: 0.6rem; background: rgba(239, 68, 68, 0.2);">Konfirmasi Selesai</button>
+              </div>
+            </div>
+
+            <div class="subtle-history-wrap">
+              <button type="button" class="subtle-history-bar" id="toggleHistoryBarBtn">
+                <span id="historySummaryText" style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Belum ada riwayat sebelumnya.</span>
+                <svg class="ico ico-sm" id="historyChevron" viewBox="0 0 24 24" style="display: none; flex-shrink: 0; transition: transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div id="historyDrawer" style="display: none; margin-top: 0.5rem;">
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 0.35rem;">
+                  <button type="button" class="btn-reset-mini" id="toggleEditHistoryBtn" style="display: none;">Kelola Riwayat</button>
+                </div>
+                <div id="historyList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HALAMAN 3: PETA SEBARAN KESELURUHAN -->
+    <section id="pageFullMap" style="display: none;">
+      <div class="fullmap-toolbar">
+        <div class="fullmap-controls">
+          <select id="fullMapKdlSelect">
+            <option value="ALL">Semua Wilayah KDL</option>
+            <option value="KDL Pemalang">KDL Pemalang</option>
+            <option value="KDL Tegal Timur">KDL Tegal Timur</option>
+            <option value="KDL Tegal Barat">KDL Tegal Barat</option>
+          </select>
+          <select id="fullMapStatusSelect">
+            <option value="ALL">Semua Status</option>
+            <option value="avail">Kosong / Tersedia</option>
+            <option value="work">Aktif Dikerjakan</option>
+            <option value="DUE">Perlu Audit</option>
+            <option value="done">Sudah Selesai</option>
+          </select>
+        </div>
+
+        <div class="map-legend">
+          <span><i style="background: #10b981;"></i> Kosong</span>
+          <span><i style="background: #2563eb;"></i> Aktif</span>
+          <span><i style="background: #f59e0b;"></i> Selesai</span>
+          <span><i style="background: #ef4444;"></i> Perlu Audit</span>
+        </div>
+      </div>
+      <div id="fullMapCanvas"></div>
+    </section>
+
+    <!-- HALAMAN 4: KELOLA ANGGOTA -->
+    <section id="pageMembers" style="display: none;">
+      <div class="centered-page">
+        <div class="section-card">
+          <div class="section-header-row">
+            <div>
+              <div class="section-title">Tim & Pembagian Peran</div>
+              <div style="font-size: 0.76rem; color: var(--muted); margin-top: 0.12rem;">Klik anggota untuk ubah profil & peran</div>
+            </div>
+            <button class="btn-sm" style="background: var(--primary); color: #fff; border: none;" id="openAddMemberBtn">+ Tambah Anggota</button>
+          </div>
+          <div id="memberList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HALAMAN 5: BULK EDITOR -->
+    <section id="pageBulk" style="display: none;">
+      <div class="centered-page">
+        <div class="section-card">
+          <div class="section-header-row">
+            <div>
+              <div class="section-title">Bulk Editor Peta</div>
+              <div style="font-size: 0.76rem; color: var(--muted); margin-top: 0.12rem;">Atur KDL, tipe, tanda, atau reset massal</div>
+            </div>
+            <span class="role-tag" id="bulkSelectedBadge">0 dipilih</span>
+          </div>
+
+          <div class="field" style="margin-top: 0.75rem; margin-bottom: 0.65rem;">
+            <label>Pilih Nomor / Rentang (Contoh: 1-50, 102, 200-210)</label>
+            <div class="bulk-range-row">
+              <input type="text" id="bulkRangeInput" class="bulk-input" placeholder="Ketik nomor / rentang...">
+              <button type="button" class="btn-bulk-primary" id="selectRangeBtn">Tandai</button>
+            </div>
+          </div>
+
+          <div class="bulk-filter-grid">
+            <select id="bulkFilterKdl" class="bulk-select">
+              <option value="ALL">Semua Wilayah KDL</option>
+              <option value="UNASSIGNED">Belum Masuk KDL</option>
+              <option value="KDL Pemalang">KDL Pemalang</option>
+              <option value="KDL Tegal Timur">KDL Tegal Timur</option>
+              <option value="KDL Tegal Barat">KDL Tegal Barat</option>
+            </select>
+            <input type="text" id="bulkSearchInput" class="bulk-input" placeholder="Cari nomor / nama...">
+          </div>
+
+          <div class="bulk-quick-actions">
+            <button type="button" class="btn-bulk-ghost" id="bulkSelectAllBtn">Pilih Semua Tampil</button>
+            <button type="button" class="btn-bulk-ghost" style="color: var(--muted);" id="bulkClearAllBtn">Batal Pilih</button>
+          </div>
+        </div>
+
+        <div class="list-container" id="bulkTerritoryList" style="max-height: 58vh; margin-bottom: 4.5rem;"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bilah Aksi Bulk Assign -->
+  <div class="bulk-action-bar" id="bulkActionBar">
+    <span style="font-size: 0.84rem; font-weight: 700;"><span id="selectedCount">0</span> dipilih</span>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+      <select id="bulkTargetAction">
+        <optgroup label="Wilayah KDL">
+          <option value="kdl:KDL Pemalang">KDL Pemalang</option>
+          <option value="kdl:KDL Tegal Timur">KDL Tegal Timur</option>
+          <option value="kdl:KDL Tegal Barat">KDL Tegal Barat</option>
+          <option value="kdl:">Kosongkan KDL</option>
+        </optgroup>
+        <optgroup label="Tanda Khusus">
+          <option value="pw:true">Tandai Kunjungan PW</option>
+          <option value="pw:false">Hapus Kunjungan PW</option>
+          <option value="dk:true">Tandai Daerah Kelompok</option>
+          <option value="dk:false">Hapus Daerah Kelompok</option>
+        </optgroup>
+        <optgroup label="Tipe Daerah">
+          <option value="cat:Umum">Tipe: Umum</option>
+          <option value="cat:Pertokoan">Tipe: Pertokoan</option>
+          <option value="cat:Perumahan">Tipe: Perumahan</option>
+          <option value="cat:Kampung / Desa">Tipe: Kampung / Desa</option>
+        </optgroup>
+        <optgroup label="Status Pengerjaan">
+          <option value="reset:true">Reset Jadi Kosong / Tersedia</option>
+        </optgroup>
+      </select>
+      <button class="btn-sm" style="background: var(--primary); color: #fff; border: none;" id="applyBulkBtn">Terapkan</button>
+    </div>
+  </div>
+
+  <!-- MODAL FILTER PETA -->
+  <div class="modal-backdrop" id="filterModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h3 style="font-size: 1.05rem;">Filter Peta Daerah</h3>
+          <p style="font-size: 0.76rem; color: var(--muted); margin-top: 0.15rem;">Pilih kombinasi KDL, tipe, dan status peta</p>
+        </div>
+        <button class="close-btn" id="closeFilterModalBtn" type="button">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="field" id="filterKdlSection">
+        <label>Wilayah KDL</label>
+        <div class="fchip-row" id="filterKdlGroup">
+          <button type="button" class="fchip active" data-kdl="ALL">Semua</button>
+          <button type="button" class="fchip" data-kdl="KDL Pemalang">Pemalang</button>
+          <button type="button" class="fchip" data-kdl="KDL Tegal Timur">Tegal Timur</button>
+          <button type="button" class="fchip" data-kdl="KDL Tegal Barat">Tegal Barat</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Tipe Daerah</label>
+        <div class="fchip-row" id="filterTipeGroup">
+          <button type="button" class="fchip active" data-tipe="">Semua</button>
+          <button type="button" class="fchip" data-tipe="UMUM">Umum</button>
+          <button type="button" class="fchip" data-tipe="DK">Kelompok</button>
+          <button type="button" class="fchip" data-tipe="PW">KPW</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Status Peta</label>
+        <div class="fchip-row" id="filterStatusGroup">
+          <button type="button" class="fchip active" data-status="">Semua</button>
+          <button type="button" class="fchip" data-status="work">Aktif</button>
+          <button type="button" class="fchip" data-status="DUE">Perlu Audit</button>
+          <button type="button" class="fchip" data-status="done">Selesai</button>
+          <button type="button" class="fchip" data-status="avail">Kosong</button>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button type="button" class="btn btn-primary" id="applyFilterBtn">Terapkan</button>
+        <button type="button" class="btn-danger-outline" id="resetFilterModalBtn" style="color: var(--muted); border-color: var(--border);">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TAMBAH ANGGOTA -->
+  <div class="modal-backdrop" id="addMemberModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h3 style="font-size: 1.05rem;">Tambah Anggota Baru</h3>
+          <p style="font-size: 0.76rem; color: var(--muted); margin-top: 0.15rem;">Daftarkan akun Google untuk akses portal</p>
+        </div>
+        <button class="close-btn" id="closeAddMemberBtn">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="field">
+        <label>Nama Panggilan</label>
+        <input type="text" id="newMemberName" placeholder="Contoh: Budi">
+      </div>
+      <div class="field">
+        <label>Alamat Email Google</label>
+        <input type="email" id="newMemberEmail" placeholder="budi@gmail.com">
+      </div>
+      <div class="field">
+        <label>Peran Daerah (Tipe 1 — Akses Semua KDL)</label>
+        <select id="newMemberRoleDaerah">
+          <option value="">Tidak ada</option>
+          <option value="hamba_daerah">Hamba Daerah</option>
+          <option value="asisten_hamba_daerah">Asisten Hamba Daerah</option>
+          <option value="pengawas_dinas">Pengawas Dinas</option>
+          <option value="koordinator_badan_penatua">Koordinator Badan Penatua</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Penempatan KDL (Tipe 2 — Maksimal 1 KDL)</label>
+        <select id="newMemberKdl">
+          <option value="">Tidak ditempatkan di KDL</option>
+          <option value="KDL Pemalang">KDL Pemalang</option>
+          <option value="KDL Tegal Timur">KDL Tegal Timur</option>
+          <option value="KDL Tegal Barat">KDL Tegal Barat</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Jabatan di KDL (Opsional)</label>
+        <select id="newMemberRoleKdl" disabled>
+          <option value="">Anggota (Lihat Saja / View-Only)</option>
+          <option value="pengawas_kelompok">Pengawas Kelompok</option>
+          <option value="hamba_kelompok">Hamba Kelompok</option>
+          <option value="asisten_pengawas_kelompok">Asisten Pengawas Kelompok</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="addMemberBtn">Simpan Anggota</button>
+    </div>
+  </div>
+
+  <!-- MODAL EDIT ANGGOTA -->
+  <div class="modal-backdrop" id="editMemberModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h3 style="font-size: 1.05rem;">Edit Profil & Peran</h3>
+          <p id="editMemberEmailSub" style="font-size: 0.76rem; color: var(--muted); margin-top: 0.15rem;">email@gmail.com</p>
+        </div>
+        <button class="close-btn" id="closeEditMemberBtn">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="field">
+        <label>Nama Panggilan</label>
+        <input type="text" id="editMemberName" placeholder="Nama panggilan">
+      </div>
+      <div class="field" id="editRoleDaerahField">
+        <label>Peran Daerah (Tipe 1 — Akses Semua KDL)</label>
+        <select id="editMemberRoleDaerah">
+          <option value="">Tidak ada</option>
+          <option value="hamba_daerah">Hamba Daerah</option>
+          <option value="asisten_hamba_daerah">Asisten Hamba Daerah</option>
+          <option value="pengawas_dinas">Pengawas Dinas</option>
+          <option value="koordinator_badan_penatua">Koordinator Badan Penatua</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Penempatan KDL (Tipe 2 — Maksimal 1 KDL)</label>
+        <select id="editMemberKdl">
+          <option value="">Tidak ditempatkan di KDL</option>
+          <option value="KDL Pemalang">KDL Pemalang</option>
+          <option value="KDL Tegal Timur">KDL Tegal Timur</option>
+          <option value="KDL Tegal Barat">KDL Tegal Barat</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Jabatan di KDL (Opsional)</label>
+        <select id="editMemberRoleKdl" disabled>
+          <option value="">Anggota (Lihat Saja / View-Only)</option>
+          <option value="pengawas_kelompok">Pengawas Kelompok</option>
+          <option value="hamba_kelompok">Hamba Kelompok</option>
+          <option value="asisten_pengawas_kelompok">Asisten Pengawas Kelompok</option>
+        </select>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" id="saveEditMemberBtn">Simpan Perubahan</button>
+        <button type="button" class="btn-danger-outline" id="deleteEditMemberBtn">Hapus Anggota</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EXPORT PDF S-13 -->
+  <div class="modal-backdrop" id="s13Modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h3 style="font-size: 1.05rem;">Export Catatan Daerah (S-13)</h3>
+          <p style="font-size: 0.76rem; color: var(--muted); margin-top: 0.15rem;">Cetak formulir resmi semua KDL (1 Sept – 31 Agt)</p>
+        </div>
+        <button class="close-btn" id="closeS13ModalBtn">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="field">
+        <label>Tahun Dinas</label>
+        <select id="s13YearSelect">
+          <option value="2026">Tahun Dinas 2026 (1 Sept 2025 – 31 Agt 2026)</option>
+          <option value="2027" selected>Tahun Dinas 2027 (1 Sept 2026 – 31 Agt 2027)</option>
+          <option value="2028">Tahun Dinas 2028 (1 Sept 2027 – 31 Agt 2028)</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="downloadS13Btn">Download PDF S-13 (Semua KDL)</button>
+    </div>
+  </div>
+
+  <!-- MODAL NOTIFIKASI -->
+  <div class="modal-backdrop" id="notifModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h3 style="font-size: 1.05rem;">Notifikasi Penting</h3>
+          <p id="notifSubtitle" style="font-size: 0.76rem; color: var(--muted); margin-top: 0.15rem;">Ringkasan kartu yang perlu perhatian</p>
+        </div>
+        <button class="close-btn" id="closeNotifModalBtn" type="button">
+          <svg class="ico ico-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="notifListContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 60vh; overflow-y: auto;"></div>
+      <button type="button" class="btn btn-primary" id="notifViewAllDueBtn" style="margin-top: 0.85rem; display: none;">
+        Lihat Semua di Kelola Peta
+      </button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module">
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import { ref, onValue, update, push, set, remove, get } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+    import { SUPER_ADMIN, auth, db } from "./js/firebase-config.js";
+    import { generateS13Pdf } from "./js/s13-export.js";
+
+    const TIPE1_LABELS = {
+      hamba_daerah: "Hamba Daerah",
+      asisten_hamba_daerah: "Asisten Hamba Daerah",
+      pengawas_dinas: "Pengawas Dinas",
+      koordinator_badan_penatua: "Koordinator Badan Penatua"
+    };
+
+    const TIPE2_LABELS = {
+      pengawas_kelompok: "Pengawas Kelompok",
+      hamba_kelompok: "Hamba Kelompok",
+      asisten_pengawas_kelompok: "Asisten Pengawas Kelompok"
+    };
+
+    const KDL_LIST = ["KDL Pemalang", "KDL Tegal Timur", "KDL Tegal Barat"];
+    const WELCOME_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzeUTW8a2VnDdj9qakYhyOiwZFtI3AakLMpLIV1KqBl9mGxtTRntneLUsJj7iWlxmCpbQ/exec";
+
+    let currentUser = null;
+    let currentProfile = { name: "Eden", role_daerah: "hamba_daerah", kdl: "", role_kdl: "" };
+    let hasTipe1Access = false;
+    let hasBulkAccess = false;
+    let canEditTerritory = false;
+    let allTerritories = {};
+    let allMembers = {};
+
+    let activeKdlFilter = "ALL";
+    let tagQuickFilter = "";
+    let statusQuickFilter = "";
+
+    let selectedId = null;
+    let editHistoryMode = false;
+    let editingMemberEmail = null;
+    let selectedBulkIds = new Set();
+
+    let map = null;
+    let currentPolygon = null;
+    let fullMap = null;
+    let fullMapLayerGroup = null;
+
+    function emailToKey(email) {
+      return email.toLowerCase().trim().replace(/\./g, ",");
+    }
+
+    function getLocalDateStr(offsetDays = 0) {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    function normalizeMember(m) {
+      let roleDaerah = m.role_daerah || "";
+      if (!roleDaerah && m.role) {
+        if (m.role === "hamba_daerah") roleDaerah = "hamba_daerah";
+        else if (m.role === "asisten") roleDaerah = "asisten_hamba_daerah";
+      }
+      const kdl = KDL_LIST.includes(m.kdl) ? m.kdl : "";
+      const roleKdl = kdl ? (m.role_kdl || "") : "";
+      return { ...m, role_daerah: roleDaerah, kdl, role_kdl: roleKdl };
+    }
+
+    function isLeaderRoleKdl(roleKdl) {
+      return roleKdl === "pengawas_kelompok" || roleKdl === "hamba_kelompok";
+    }
+
+    function getKdlLeader(kdl, excludeEmail = "") {
+      if (!kdl) return null;
+      const targetEmail = excludeEmail.toLowerCase().trim();
+      for (const raw of Object.values(allMembers)) {
+        const m = normalizeMember(raw);
+        if (m.email.toLowerCase().trim() === targetEmail) continue;
+        if (m.kdl === kdl && isLeaderRoleKdl(m.role_kdl)) return m;
+      }
+      return null;
+    }
+
+    function getTimeGreeting() {
+      const h = new Date().getHours();
+      if (h < 11) return "Selamat pagi,";
+      if (h < 15) return "Selamat siang,";
+      if (h < 18) return "Selamat sore,";
+      return "Selamat malam,";
+    }
+
+    function cleanTerritoryName(t) {
+      return String(t.nama ?? "").trim() || `Daerah ${t.nomor || ""}`;
+    }
+
+    function formatShortKdl(kdl) {
+      return (kdl || "Belum diatur").replace(/^KDL\s+/i, "");
+    }
+
+    function getInitials(name) {
+      const clean = (name || "?").trim();
+      const parts = clean.split(/\s+/);
+      if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+      return clean.slice(0, 2).toUpperCase();
+    }
+
+    function formatMemberHeadline(m) {
+      const roles = [];
+      if (TIPE1_LABELS[m.role_daerah]) roles.push(TIPE1_LABELS[m.role_daerah]);
+      if (m.kdl && TIPE2_LABELS[m.role_kdl]) roles.push(TIPE2_LABELS[m.role_kdl]);
+      const roleStr = roles.join(" | ");
+      if (roleStr && m.kdl) return `${roleStr} • ${formatShortKdl(m.kdl)}`;
+      if (roleStr) return roleStr;
+      if (m.kdl) return `Anggota • ${formatShortKdl(m.kdl)}`;
+      return "Belum diatur";
+    }
+
+    function formatIndoTimestamp(isoStr) {
+      if (!isoStr) return "-";
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return isoStr;
+      return d.toLocaleString("id-ID", {
+        day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
+      }).replace(".", ":");
+    }
+
+    // === AUTH ===
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+      currentUser = user;
+      const userEmail = user.email.toLowerCase();
+      const userKey = emailToKey(userEmail);
+
+      const snap = await get(ref(db, `users/${userKey}`));
+      if (!snap.exists()) {
+        if (userEmail === SUPER_ADMIN) {
+          currentProfile = { email: userEmail, name: "Eden", role_daerah: "hamba_daerah", kdl: "", role_kdl: "" };
+          await set(ref(db, `users/${userKey}`), currentProfile);
+        } else {
+          alert("Maaf, email Anda (" + user.email + ") belum terdaftar. Hubungi Hamba Daerah.");
+          await signOut(auth);
+          window.location.href = "index.html";
+          return;
+        }
+      } else {
+        currentProfile = normalizeMember(snap.val());
+      }
+
+      hasTipe1Access = (userEmail === SUPER_ADMIN || Boolean(TIPE1_LABELS[currentProfile.role_daerah]));
+      hasBulkAccess = (
+        userEmail === SUPER_ADMIN ||
+        currentProfile.role_daerah === "hamba_daerah" ||
+        currentProfile.role_daerah === "asisten_hamba_daerah"
+      );
+      const hasKdlEditRole = Boolean(currentProfile.kdl && TIPE2_LABELS[currentProfile.role_kdl]);
+      canEditTerritory = hasTipe1Access || hasKdlEditRole;
+
+      if (!hasTipe1Access && !currentProfile.kdl) {
+        alert("Akun Anda belum ditempatkan di KDL mana pun. Hubungi Hamba Daerah.");
+        await signOut(auth);
+        window.location.href = "index.html";
+        return;
+      }
+
+      document.body.style.display = "flex";
+      document.getElementById("greetingTime").textContent = getTimeGreeting();
+      document.getElementById("greetingName").textContent = currentProfile.name || user.email.split("@")[0];
+
+      const roleParts = [];
+      if (TIPE1_LABELS[currentProfile.role_daerah]) roleParts.push(TIPE1_LABELS[currentProfile.role_daerah]);
+      if (currentProfile.kdl && TIPE2_LABELS[currentProfile.role_kdl]) roleParts.push(TIPE2_LABELS[currentProfile.role_kdl]);
+
+      const rolesEl = document.getElementById("greetingRolesText");
+      if (roleParts.length > 0) {
+        rolesEl.textContent = roleParts.join(" | ");
+        rolesEl.style.display = "block";
+      }
+
+      document.getElementById("greetingKdlText").textContent = currentProfile.kdl || "Semua KDL";
+
+      if (hasTipe1Access) {
+        document.getElementById("dtabMembers").style.display = "inline-flex";
+        document.getElementById("s13FeatureCard").style.display = "block";
+        listenS13Logs();
+      } else {
+        document.getElementById("filterKdlSection").style.display = "none";
+        const fmKdl = document.getElementById("fullMapKdlSelect");
+        if (fmKdl && currentProfile.kdl) {
+          fmKdl.value = currentProfile.kdl;
+          fmKdl.disabled = true;
+        }
+      }
+
+      if (hasBulkAccess) {
+        document.getElementById("dtabBulk").style.display = "inline-flex";
+      }
+
+      listenMembers();
+      listenTerritories();
+
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("filter") === "due") {
+        openFilteredList("DUE");
+      }
+    });
+
+    function isMyTerritory(t) {
+      if (hasTipe1Access) return true;
+      return Boolean(currentProfile.kdl) && (t.kdl || "") === currentProfile.kdl;
+    }
+
+    function addThreeMonths(dateStr) {
+      if (!dateStr) return "";
+      const [y, m, day] = dateStr.split("-").map(Number);
+      const d = new Date(y, m - 1 + 3, day);
+      if (d.getDate() !== day) d.setDate(0);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    function isAuditDue(t) {
+      if (!t.pemegang || !t.jatuh_tempo_audit) return false;
+      return t.jatuh_tempo_audit <= getLocalDateStr(0);
+    }
+
+    function isWorkedTerritory(t) {
+      return Boolean((t.pemegang && t.pemegang.trim() !== "") || (t.riwayat && Object.keys(t.riwayat).length > 0));
+    }
+
+    // === ANGGOTA ===
+    function listenMembers() {
+      onValue(ref(db, "users"), (snap) => {
+        allMembers = snap.val() || {};
+        renderMembers();
+        refreshNewMemberRoleOptions();
+      });
+    }
+
+    function renderMembers() {
+      const listEl = document.getElementById("memberList");
+      if (!listEl) return;
+      const membersArr = Object.values(allMembers)
+        .map(normalizeMember)
+        .sort((a, b) => (a.name || a.email).localeCompare(b.name || b.email, "id", { sensitivity: "base" }));
+
+      listEl.innerHTML = membersArr.map(m => {
+        const displayName = m.name || m.email.split("@")[0];
+        return `
+          <div class="member-row" onclick="openEditMemberModal('${m.email}')">
+            <div class="member-avatar">${getInitials(displayName)}</div>
+            <div class="member-info">
+              <div class="member-name">${displayName}</div>
+              <div class="member-headline">${formatMemberHeadline(m)}</div>
+              <div class="member-email">${m.email}</div>
+            </div>
+            <svg class="ico ico-sm" style="color: var(--muted);" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function syncRoleKdlOptions(kdlSelectEl, roleKdlSelectEl, excludeEmail = "") {
+      const chosenKdl = kdlSelectEl.value;
+      roleKdlSelectEl.disabled = !chosenKdl;
+      if (!chosenKdl) {
+        roleKdlSelectEl.value = "";
+        return;
+      }
+      const leader = getKdlLeader(chosenKdl, excludeEmail);
+      const optPengawas = roleKdlSelectEl.querySelector('option[value="pengawas_kelompok"]');
+      const optHamba = roleKdlSelectEl.querySelector('option[value="hamba_kelompok"]');
+      if (leader) {
+        const info = ` (Sudah diisi ${leader.name || leader.email})`;
+        optPengawas.disabled = true;
+        optPengawas.textContent = `Pengawas Kelompok${info}`;
+        optHamba.disabled = true;
+        optHamba.textContent = `Hamba Kelompok${info}`;
+        if (isLeaderRoleKdl(roleKdlSelectEl.value)) roleKdlSelectEl.value = "";
+      } else {
+        optPengawas.disabled = false;
+        optPengawas.textContent = "Pengawas Kelompok";
+        optHamba.disabled = false;
+        optHamba.textContent = "Hamba Kelompok";
+      }
+    }
+
+    function refreshNewMemberRoleOptions() {
+      const kdlSel = document.getElementById("newMemberKdl");
+      const roleKdlSel = document.getElementById("newMemberRoleKdl");
+      if (kdlSel && roleKdlSel) syncRoleKdlOptions(kdlSel, roleKdlSel, "");
+    }
+
+    document.getElementById("newMemberKdl")?.addEventListener("change", refreshNewMemberRoleOptions);
+    document.getElementById("openAddMemberBtn")?.addEventListener("click", () => {
+      document.getElementById("newMemberEmail").value = "";
+      document.getElementById("newMemberName").value = "";
+      document.getElementById("newMemberRoleDaerah").value = "";
+      document.getElementById("newMemberKdl").value = "";
+      document.getElementById("newMemberRoleKdl").value = "";
+      refreshNewMemberRoleOptions();
+      document.getElementById("addMemberModal").style.display = "flex";
+    });
+    document.getElementById("closeAddMemberBtn")?.addEventListener("click", () => {
+      document.getElementById("addMemberModal").style.display = "none";
+    });
+
+    document.getElementById("addMemberBtn")?.addEventListener("click", async () => {
+      const email = document.getElementById("newMemberEmail").value.trim().toLowerCase();
+      const name = document.getElementById("newMemberName").value.trim();
+      const roleDaerah = document.getElementById("newMemberRoleDaerah").value;
+      const kdl = document.getElementById("newMemberKdl").value;
+      const roleKdl = kdl ? document.getElementById("newMemberRoleKdl").value : "";
+
+      if (!email) return alert("Masukkan alamat email anggota.");
+      if (!roleDaerah && !kdl) return alert("Pilih minimal Peran Daerah atau Penempatan KDL.");
+      if (kdl && isLeaderRoleKdl(roleKdl)) {
+        const conflict = getKdlLeader(kdl, email);
+        if (conflict) return alert(`${kdl} sudah memiliki ${TIPE2_LABELS[conflict.role_kdl]} (${conflict.name || conflict.email}).`);
+      }
+
+      const finalName = name || email.split("@")[0];
+      const newMemberData = { email, name: finalName, role_daerah: roleDaerah, kdl, role_kdl: roleKdl };
+      await set(ref(db, `users/${emailToKey(email)}`), newMemberData);
+      document.getElementById("addMemberModal").style.display = "none";
+
+      if (WELCOME_WEBHOOK_URL && WELCOME_WEBHOOK_URL.startsWith("https://")) {
+        fetch(WELCOME_WEBHOOK_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({
+            action: "welcome_member",
+            email,
+            name: finalName,
+            role_summary: formatMemberHeadline(normalizeMember(newMemberData))
+          })
+        }).catch(() => {});
+      }
+    });
+
+    window.openEditMemberModal = function (email) {
+      if (!hasTipe1Access) return;
+      const raw = allMembers[emailToKey(email)];
+      if (!raw) return;
+      const m = normalizeMember(raw);
+      editingMemberEmail = m.email;
+      const isSuper = m.email.toLowerCase() === SUPER_ADMIN;
+
+      document.getElementById("editMemberEmailSub").textContent = m.email;
+      document.getElementById("editMemberName").value = m.name || "";
+      const roleDaerahSel = document.getElementById("editMemberRoleDaerah");
+      roleDaerahSel.value = m.role_daerah || "";
+      roleDaerahSel.disabled = isSuper;
+      document.getElementById("editRoleDaerahField").style.opacity = isSuper ? "0.65" : "1";
+
+      const kdlSel = document.getElementById("editMemberKdl");
+      const roleKdlSel = document.getElementById("editMemberRoleKdl");
+      kdlSel.value = m.kdl || "";
+      roleKdlSel.value = m.role_kdl || "";
+      syncRoleKdlOptions(kdlSel, roleKdlSel, m.email);
+
+      document.getElementById("deleteEditMemberBtn").style.display = isSuper ? "none" : "block";
+      document.getElementById("editMemberModal").style.display = "flex";
+    };
+
+    document.getElementById("editMemberKdl")?.addEventListener("change", () => {
+      syncRoleKdlOptions(document.getElementById("editMemberKdl"), document.getElementById("editMemberRoleKdl"), editingMemberEmail || "");
+    });
+    document.getElementById("closeEditMemberBtn")?.addEventListener("click", () => {
+      document.getElementById("editMemberModal").style.display = "none";
+      editingMemberEmail = null;
+    });
+    document.getElementById("saveEditMemberBtn")?.addEventListener("click", async () => {
+      if (!hasTipe1Access || !editingMemberEmail) return;
+      const isSuper = editingMemberEmail.toLowerCase() === SUPER_ADMIN;
+      const name = document.getElementById("editMemberName").value.trim() || editingMemberEmail.split("@")[0];
+      const roleDaerah = isSuper ? "hamba_daerah" : document.getElementById("editMemberRoleDaerah").value;
+      const kdl = document.getElementById("editMemberKdl").value;
+      const roleKdl = kdl ? document.getElementById("editMemberRoleKdl").value : "";
+
+      if (!roleDaerah && !kdl) return alert("Pilih minimal Peran Daerah atau Penempatan KDL.");
+      if (kdl && isLeaderRoleKdl(roleKdl)) {
+        const conflict = getKdlLeader(kdl, editingMemberEmail);
+        if (conflict) return alert(`${kdl} sudah memiliki ${TIPE2_LABELS[conflict.role_kdl]} (${conflict.name || conflict.email}).`);
+      }
+
+      await update(ref(db, `users/${emailToKey(editingMemberEmail)}`), {
+        name, role_daerah: roleDaerah, kdl, role_kdl: roleKdl, role: null
+      });
+      document.getElementById("editMemberModal").style.display = "none";
+      editingMemberEmail = null;
+    });
+
+    document.getElementById("deleteEditMemberBtn")?.addEventListener("click", async () => {
+      if (!hasTipe1Access || !editingMemberEmail || editingMemberEmail.toLowerCase() === SUPER_ADMIN) return;
+      if (!confirm(`Hapus akses untuk ${editingMemberEmail}?`)) return;
+      await remove(ref(db, `users/${emailToKey(editingMemberEmail)}`));
+      document.getElementById("editMemberModal").style.display = "none";
+      editingMemberEmail = null;
+    });
+
+    // === PETA DAERAH & BERANDA ===
+    function listenTerritories() {
+      onValue(ref(db, "territories"), (snap) => {
+        allTerritories = snap.val() || {};
+        renderHomeOverview();
+        renderNotifications();
+        renderList();
+        if (hasBulkAccess) renderBulkList();
+        if (document.getElementById("pageFullMap").style.display === "block") renderFullMap();
+        if (selectedId && allTerritories[selectedId] && document.getElementById("detailCard").style.display === "block") {
+          renderHistoryList(allTerritories[selectedId]);
+        }
+      });
+    }
+
+    function renderHomeOverview() {
+      const list = Object.values(allTerritories);
+      const mineList = list.filter(t => isMyTerritory(t));
+      const workingCount = mineList.filter(t => isWorkedTerritory(t)).length;
+      const availCount = mineList.length - workingCount;
+      const dueCount = mineList.filter(t => isAuditDue(t)).length;
+
+      document.getElementById("ovTotal").textContent = mineList.length;
+      document.getElementById("ovWork").textContent = workingCount;
+      document.getElementById("ovAvail").textContent = availCount;
+
+      const alertEl = document.getElementById("homeAuditAlert");
+      if (dueCount > 0) {
+        alertEl.style.display = "flex";
+        document.getElementById("alertDueCount").textContent = dueCount;
+      } else {
+        alertEl.style.display = "none";
+      }
+
+      const visibleKdls = hasTipe1Access ? KDL_LIST : [currentProfile.kdl];
+      document.getElementById("breakdownTitle").textContent = hasTipe1Access ? "Sebaran per KDL" : "Ringkasan Wilayah";
+
+      let html = visibleKdls.map(k => {
+        const sub = list.filter(t => t.kdl === k);
+        const worked = sub.filter(t => isWorkedTerritory(t)).length;
+        const dkCount = sub.filter(t => Boolean(t.daerah_kelompok)).length;
+        const pwCount = sub.filter(t => Boolean(t.kunjungan_pw)).length;
+        const pct = sub.length > 0 ? Math.round((worked / sub.length) * 100) : 0;
+
+        return `
+          <div class="kdl-summary-row" onclick="openFilteredList('${k}')">
+            <div class="kdl-row-top">
+              <div class="kdl-title-inline">
+                <strong>${formatShortKdl(k)}</strong>
+                <span class="dk-tag" onclick="event.stopPropagation(); openFilteredList('${k}', '', 'DK')">Kelompok: ${dkCount}</span>
+                <span class="pw-tag" onclick="event.stopPropagation(); openFilteredList('${k}', '', 'PW')">KPW: ${pwCount}</span>
+              </div>
+              <span style="color:var(--muted); font-size:0.8rem;">${worked} / ${sub.length} peta</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
+          </div>`;
+      }).join("");
+
+      if (hasTipe1Access) {
+        const unassigned = list.filter(t => !t.kdl).length;
+        if (unassigned > 0) {
+          html += `
+            <div class="kdl-summary-row" onclick="openFilteredList('UNASSIGNED')">
+              <div class="kdl-row-top">
+                <span style="color:var(--warning); font-weight:600;">Belum Masuk KDL</span>
+                <span style="color:var(--muted); font-size:0.8rem;">${unassigned} peta</span>
+              </div>
+            </div>`;
+        }
+      }
+      document.getElementById("kdlBreakdown").innerHTML = html;
+    }
+
+    function updateFilterUI() {
+      document.querySelectorAll("#filterKdlGroup .fchip").forEach(b => b.classList.toggle("active", b.dataset.kdl === activeKdlFilter));
+      document.querySelectorAll("#filterTipeGroup .fchip").forEach(b => b.classList.toggle("active", b.dataset.tipe === tagQuickFilter));
+      document.querySelectorAll("#filterStatusGroup .fchip").forEach(b => b.classList.toggle("active", b.dataset.status === statusQuickFilter));
+
+      const activeTags = [];
+      if (activeKdlFilter === "UNASSIGNED") activeTags.push("Belum Masuk KDL");
+      else if (activeKdlFilter !== "ALL") activeTags.push(formatShortKdl(activeKdlFilter));
+
+      if (tagQuickFilter === "UMUM") activeTags.push("Umum");
+      else if (tagQuickFilter === "DK") activeTags.push("Kelompok");
+      else if (tagQuickFilter === "PW") activeTags.push("KPW");
+
+      if (statusQuickFilter === "work") activeTags.push("Aktif");
+      else if (statusQuickFilter === "DUE") activeTags.push("Perlu Audit");
+      else if (statusQuickFilter === "done") activeTags.push("Selesai");
+      else if (statusQuickFilter === "avail") activeTags.push("Kosong");
+
+      const triggerBtn = document.getElementById("openFilterModalBtn");
+      const countBadge = document.getElementById("filterCountBadge");
+      const stripEl = document.getElementById("activeFilterStrip");
+      const tagsEl = document.getElementById("activeFilterTags");
+
+      if (activeTags.length > 0) {
+        triggerBtn.classList.add("has-active");
+        countBadge.textContent = activeTags.length;
+        countBadge.style.display = "inline-flex";
+        tagsEl.innerHTML = activeTags.map(lbl => `<span class="af-tag">${lbl}</span>`).join("");
+        stripEl.style.display = "flex";
+      } else {
+        triggerBtn.classList.remove("has-active");
+        countBadge.style.display = "none";
+        stripEl.style.display = "none";
+      }
+    }
+
+    function sortByTerritoryNumber(a, b) {
+      const numA = parseInt(a.nomor, 10);
+      const numB = parseInt(b.nomor, 10);
+      if (!isNaN(numA) && !isNaN(numB) && numA !== numB) return numA - numB;
+      return String(a.nomor ?? "").localeCompare(String(b.nomor ?? ""), "id", { numeric: true });
+    }
+
+    function getVisibleTerritories() {
+      const list = Object.values(allTerritories).filter(t => isMyTerritory(t));
+      const search = (document.getElementById("searchInput")?.value || "").toLowerCase();
+
+      return list
+        .filter(t => {
+          if (activeKdlFilter === "UNASSIGNED" && t.kdl) return false;
+          if (activeKdlFilter.startsWith("KDL ") && t.kdl !== activeKdlFilter) return false;
+
+          if (tagQuickFilter === "UMUM" && (t.kategori || "Umum") !== "Umum") return false;
+          if (tagQuickFilter === "DK" && !t.daerah_kelompok) return false;
+          if (tagQuickFilter === "PW" && !t.kunjungan_pw) return false;
+
+          const isWorking = Boolean(t.pemegang && t.pemegang.trim() !== "");
+          const hasHistory = Boolean(t.riwayat && Object.keys(t.riwayat).length > 0);
+          if (statusQuickFilter === "work" && !isWorking) return false;
+          if (statusQuickFilter === "DUE" && !isAuditDue(t)) return false;
+          if (statusQuickFilter === "done" && (isWorking || !hasHistory)) return false;
+          if (statusQuickFilter === "avail" && (isWorking || hasHistory)) return false;
+
+          if (search) {
+            const hay = `${t.nomor} ${t.nama} ${t.pemegang} ${t.kdl || ''} ${t.kategori || ''}`.toLowerCase();
+            if (!hay.includes(search)) return false;
+          }
+          return true;
+        })
+        .sort(sortByTerritoryNumber);
+    }
+
+    function renderList() {
+      updateFilterUI();
+      const filtered = getVisibleTerritories();
+      const container = document.getElementById("territoryList");
+      if (!container) return;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--muted); font-size: 0.85rem;">Tidak ada peta ditemukan.</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(t => {
+        const due = isAuditDue(t);
+        const isWorking = Boolean(t.pemegang && t.pemegang.trim() !== "");
+        const hasHistory = Boolean(t.riwayat && Object.keys(t.riwayat).length > 0);
+        const isSelected = t.id === selectedId;
+
+        let badge = `<span class="badge b-avail">Kosong</span>`;
+        if (due) badge = `<span class="badge b-due">Audit</span>`;
+        else if (isWorking) badge = `<span class="badge b-work">Aktif</span>`;
+        else if (hasHistory) badge = `<span class="badge b-done">Selesai</span>`;
+
+        const kdlLabel = formatShortKdl(t.kdl);
+        const katLabel = t.kategori || "Umum";
+        let subText = `${kdlLabel} • ${katLabel}`;
+        if (isWorking) subText = `${t.pemegang} • ${kdlLabel}`;
+        else if (hasHistory) {
+          const entries = Object.values(t.riwayat);
+          subText = `Terakhir: ${entries[entries.length - 1].pemegang} • ${kdlLabel}`;
+        }
+
+        return `
+          <div class="list-item ${due ? 'is-due' : ''} ${isSelected ? 'is-selected' : ''}" onclick="openDetail('${t.id}')">
+            <div class="item-left">
+              <span class="item-num">#${t.nomor}</span>
+              <div class="item-info">
+                <div class="item-title-row">
+                  <div class="item-title">${cleanTerritoryName(t)}</div>
+                  ${t.kunjungan_pw ? `<span class="pw-tag">Kunjungan PW</span>` : ""}
+                  ${t.daerah_kelompok ? `<span class="dk-tag">Daerah Kelompok</span>` : ""}
+                </div>
+                <div class="item-sub">${subText}</div>
+              </div>
+            </div>
+            ${badge}
+          </div>
+        `;
+      }).join("");
+    }
+
+    // === INSPECTOR / DETAIL PETA KANAN ===
+    function closeDetailPanel() {
+      selectedId = null;
+      document.getElementById("detailCard").style.display = "none";
+      document.getElementById("emptyInspector").style.display = "flex";
+      renderList();
+    }
+
+    document.getElementById("closeDetailBtn")?.addEventListener("click", closeDetailPanel);
+
+    function renderHistoryList(t) {
+      const histEl = document.getElementById("historyList");
+      const toggleBtn = document.getElementById("toggleEditHistoryBtn");
+      const summaryEl = document.getElementById("historySummaryText");
+      const chevEl = document.getElementById("historyChevron");
+      const drawerEl = document.getElementById("historyDrawer");
+      const entries = t.riwayat ? Object.entries(t.riwayat).reverse() : [];
+
+      if (entries.length === 0) {
+        summaryEl.textContent = "Belum ada riwayat pengerjaan.";
+        chevEl.style.display = "none";
+        drawerEl.style.display = "none";
+        toggleBtn.style.display = "none";
+        histEl.innerHTML = "";
+        return;
+      }
+
+      const [, latest] = entries[0];
+      summaryEl.textContent = `Riwayat (${entries.length}): Terakhir ${latest.pemegang} (${latest.tanggal_kembali || latest.tanggal_mulai || '-'})`;
+      chevEl.style.display = "block";
+      toggleBtn.style.display = hasTipe1Access ? "inline-flex" : "none";
+      toggleBtn.textContent = editHistoryMode ? "Selesai Kelola" : "Kelola Riwayat";
+
+      histEl.innerHTML = entries.map(([histKey, r]) => `
+        <div class="hist-item">
+          <div style="min-width: 0; flex: 1;">
+            <strong>${r.pemegang}</strong>
+            <div style="color:var(--muted); font-size:0.72rem;">${r.keterangan || ''}</div>
+          </div>
+          <div style="text-align:right; font-size:0.72rem; color:var(--muted); flex-shrink: 0;">
+            ${r.tanggal_mulai || '-'}<br>s/d ${r.tanggal_kembali || '-'}
+          </div>
+          ${editHistoryMode ? `
+            <button type="button" class="btn-sm btn-logout" style="padding: 0.25rem 0.5rem; margin-left: 0.35rem; font-size: 0.72rem;" onclick="deleteHistoryItem('${histKey}', '${(r.pemegang || '').replace(/'/g, "\\'")}')">
+              Hapus
+            </button>
+          ` : ''}
+        </div>
+      `).join("");
+    }
+
+    document.getElementById("toggleHistoryBarBtn")?.addEventListener("click", () => {
+      const drawer = document.getElementById("historyDrawer");
+      const chev = document.getElementById("historyChevron");
+      if (!document.getElementById("historyList").innerHTML.trim()) return;
+      const isOpen = drawer.style.display === "block";
+      drawer.style.display = isOpen ? "none" : "block";
+      chev.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+    });
+
+    document.getElementById("toggleEditHistoryBtn")?.addEventListener("click", () => {
+      if (!selectedId || !allTerritories[selectedId]) return;
+      editHistoryMode = !editHistoryMode;
+      renderHistoryList(allTerritories[selectedId]);
+    });
+
+    window.deleteHistoryItem = async function (histKey, pemegangName) {
+      if (!selectedId || !hasTipe1Access) return;
+      if (!confirm(`Hapus permanen catatan riwayat atas nama "${pemegangName}"?`)) return;
+      await remove(ref(db, `territories/${selectedId}/riwayat/${histKey}`));
+    };
+
+    document.getElementById("toggleAttrBtn")?.addEventListener("click", () => {
+      const body = document.getElementById("attrBody");
+      const chev = document.getElementById("attrChevron");
+      const isOpen = body.style.display === "block";
+      body.style.display = isOpen ? "none" : "block";
+      chev.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+    });
+
+    window.openDetail = function (id) {
+      selectedId = id;
+      editHistoryMode = false;
+      const t = allTerritories[id];
+      if (!t) return;
+
+      renderList();
+      document.getElementById("emptyInspector").style.display = "none";
+      document.getElementById("detailCard").style.display = "block";
+
+      document.getElementById("mKdlBadge").textContent = t.kdl || "Belum Masuk KDL";
+      const numPrefix = t.nomor ? `#${t.nomor} — ` : "";
+      document.getElementById("mNama").textContent = `${numPrefix}${cleanTerritoryName(t)}`;
+
+      // Tombol Buka My Maps / Google Maps untuk semua pengguna
+      const openMyMapsBtn = document.getElementById("openMyMapsBtn");
+      const openMyMapsText = document.getElementById("openMyMapsText");
+      const hasMyMaps = Boolean((t.mymaps_url || "").trim());
+      const hasCoords = Boolean(t.koordinat && t.koordinat.length > 0);
+      if (hasMyMaps || hasCoords) {
+        openMyMapsBtn.style.display = "inline-flex";
+        openMyMapsText.textContent = hasMyMaps ? "Buka My Maps" : "Buka Maps";
+      } else {
+        openMyMapsBtn.style.display = "none";
+      }
+
+      const inpPemegang = document.getElementById("fPemegang");
+      const inpTglMulai = document.getElementById("fTglMulai");
+      const inpCatatan = document.getElementById("fCatatan");
+
+      inpPemegang.value = t.pemegang || "";
+      inpTglMulai.value = t.tanggal_mulai || "";
+      inpCatatan.value = t.catatan || "";
+
+      document.getElementById("fNamaDaerah").value = t.nama || "";
+      document.getElementById("fKategori").value = t.kategori || "Umum";
+      document.getElementById("fKdlPeta").value = t.kdl || "";
+      document.getElementById("fMyMapsUrl").value = t.mymaps_url || "";
+      document.getElementById("fKunjunganPw").checked = Boolean(t.kunjungan_pw);
+      document.getElementById("fDaerahKelompok").checked = Boolean(t.daerah_kelompok);
+
+      document.getElementById("attrBody").style.display = "none";
+      document.getElementById("attrChevron").style.transform = "rotate(0deg)";
+      document.getElementById("historyDrawer").style.display = "none";
+      document.getElementById("finishConfirmBox").style.display = "none";
+      document.getElementById("historyChevron").style.transform = "rotate(0deg)";
+
+      inpPemegang.disabled = !canEditTerritory;
+      inpTglMulai.disabled = !canEditTerritory;
+      inpCatatan.disabled = !canEditTerritory;
+
+      document.getElementById("attrPanel").style.display = canEditTerritory ? "block" : "none";
+      document.getElementById("fKdlField").style.display = hasTipe1Access ? "block" : "none";
+
+      document.getElementById("viewOnlyNotice").style.display = canEditTerritory ? "none" : "flex";
+      document.getElementById("saveBtn").style.display = canEditTerritory ? "inline-flex" : "none";
+      document.getElementById("primaryActionRow").style.gridTemplateColumns = canEditTerritory ? "1fr 1fr" : "1fr";
+
+      const hasHolder = t.pemegang && t.pemegang.trim() !== "";
+      document.getElementById("holderActionRow").style.display = (canEditTerritory && hasHolder) ? "grid" : "none";
+
+      renderHistoryList(t);
+
+      setTimeout(() => {
+        if (!map) {
+          map = L.map("mapContainer").setView([-6.89, 109.38], 13);
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OSM" }).addTo(map);
+        }
+        map.invalidateSize();
+        if (currentPolygon) map.removeLayer(currentPolygon);
+        if (t.koordinat && t.koordinat.length > 0) {
+          currentPolygon = L.polygon(t.koordinat, { color: "#2563eb", fillOpacity: 0.25 }).addTo(map);
+          map.fitBounds(currentPolygon.getBounds(), { padding: [24, 24] });
+        }
+      }, 80);
+    };
+
+    // Buka Google My Maps / Google Maps
+    document.getElementById("openMyMapsBtn")?.addEventListener("click", () => {
+      if (!selectedId) return;
+      const t = allTerritories[selectedId];
+      if (!t) return;
+
+      const myMapsUrl = (document.getElementById("fMyMapsUrl")?.value || t.mymaps_url || "").trim();
+      if (myMapsUrl) {
+        window.open(myMapsUrl, "_blank", "noopener");
+        return;
+      }
+      if (t.koordinat && t.koordinat.length > 0) {
+        const center = L.polygon(t.koordinat).getBounds().getCenter();
+        window.open(`https://maps.google.com/?q=${center.lat.toFixed(6)},${center.lng.toFixed(6)}`, "_blank", "noopener");
+      }
+    });
+
+    // Loncat ke Peta Sebaran dan zoom ke kartu yang dipilih
+    document.getElementById("viewOnFullMapBtn")?.addEventListener("click", () => {
+      const targetId = selectedId;
+      switchPage("pageFullMap");
+      if (targetId && allTerritories[targetId]?.koordinat?.length > 0 && fullMap) {
+        setTimeout(() => {
+          const bounds = L.polygon(allTerritories[targetId].koordinat).getBounds();
+          fullMap.fitBounds(bounds, { padding: [60, 60], maxZoom: 17 });
+        }, 120);
+      }
+    });
+
+    document.getElementById("saveBtn")?.addEventListener("click", async () => {
+      if (!selectedId || !canEditTerritory) return;
+      const t = allTerritories[selectedId];
+      const pemegang = document.getElementById("fPemegang").value.trim();
+      const tglMulai = document.getElementById("fTglMulai").value;
+      let jatuhTempo = "";
+      const isNewCycle = tglMulai !== t.tanggal_mulai || !t.jatuh_tempo_audit;
+
+      if (pemegang && tglMulai) {
+        jatuhTempo = isNewCycle ? addThreeMonths(tglMulai) : t.jatuh_tempo_audit;
+      }
+
+      const payload = {
+        pemegang,
+        status: pemegang ? "Sedang Dikerjakan" : "Tersedia",
+        tanggal_mulai: tglMulai,
+        jatuh_tempo_audit: jatuhTempo,
+        catatan: document.getElementById("fCatatan").value.trim(),
+        nama: document.getElementById("fNamaDaerah").value.trim() || t.nama || "",
+        kategori: document.getElementById("fKategori").value,
+        mymaps_url: document.getElementById("fMyMapsUrl").value.trim(),
+        kunjungan_pw: document.getElementById("fKunjunganPw").checked,
+        daerah_kelompok: document.getElementById("fDaerahKelompok").checked
+      };
+
+      if (!pemegang || isNewCycle) payload.audit_notified_at = "";
+      if (hasTipe1Access) payload.kdl = document.getElementById("fKdlPeta").value;
+
+      await update(ref(db, `territories/${selectedId}`), payload);
+      openDetail(selectedId);
+    });
+
+    document.getElementById("shareWaBtn")?.addEventListener("click", () => {
+      if (!selectedId) return;
+      const t = allTerritories[selectedId];
+      if (!t) return;
+
+      const namaPeta = cleanTerritoryName(t);
+      const pemegangVal = document.getElementById("fPemegang").value.trim();
+      const tglMulaiVal = document.getElementById("fTglMulai").value;
+      const catatanVal = document.getElementById("fCatatan").value.trim();
+      const myMapsVal = document.getElementById("fMyMapsUrl").value.trim() || (t.mymaps_url || "").trim();
+
+      let mapsLink = "";
+      if (myMapsVal) mapsLink = `🗺️ Peta My Maps: ${myMapsVal}`;
+      else if (t.koordinat && t.koordinat.length > 0) {
+        const center = L.polygon(t.koordinat).getBounds().getCenter();
+        mapsLink = `📍 Lokasi Maps: https://maps.google.com/?q=${center.lat.toFixed(6)},${center.lng.toFixed(6)}`;
+      }
+
+      const lines = [
+        `*PETA DAERAH — ${namaPeta.toUpperCase()}*`,
+        pemegangVal ? `• Pemegang: ${pemegangVal}` : `• Status: Tersedia`,
+        tglMulaiVal ? `• Mulai: ${tglMulaiVal}` : null,
+        catatanVal ? `• Catatan: ${catatanVal}` : null,
+        mapsLink
+      ].filter(Boolean);
+
+      window.open(`https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`, "_blank");
+    });
+
+    document.getElementById("auditContinueBtn")?.addEventListener("click", async () => {
+      if (!selectedId || !canEditTerritory) return;
+      const pemegang = document.getElementById("fPemegang").value.trim();
+      if (!pemegang) return;
+      const today = getLocalDateStr(0);
+
+      await push(ref(db, `territories/${selectedId}/riwayat`), {
+        pemegang,
+        tanggal_mulai: document.getElementById("fTglMulai").value || today,
+        keterangan: `Audit 3 Bln (${today}): Lanjut`,
+        tanggal_kembali: today
+      });
+      await update(ref(db, `territories/${selectedId}`), {
+        tanggal_mulai: today,
+        jatuh_tempo_audit: addThreeMonths(today),
+        audit_notified_at: ""
+      });
+      openDetail(selectedId);
+    });
+
+    document.getElementById("finishBtn")?.addEventListener("click", () => {
+      if (!selectedId || !canEditTerritory) return;
+      const tglInput = document.getElementById("fTglSelesai");
+      tglInput.value = getLocalDateStr(0);
+      tglInput.max = getLocalDateStr(0);
+      document.getElementById("holderActionRow").style.display = "none";
+      document.getElementById("finishConfirmBox").style.display = "block";
+    });
+
+    document.getElementById("setFinishYesterdayBtn")?.addEventListener("click", () => {
+      document.getElementById("fTglSelesai").value = getLocalDateStr(-1);
+    });
+    document.getElementById("setFinishTodayBtn")?.addEventListener("click", () => {
+      document.getElementById("fTglSelesai").value = getLocalDateStr(0);
+    });
+    document.getElementById("cancelFinishBtn")?.addEventListener("click", () => {
+      document.getElementById("finishConfirmBox").style.display = "none";
+      document.getElementById("holderActionRow").style.display = "grid";
+    });
+
+    document.getElementById("confirmFinishBtn")?.addEventListener("click", async () => {
+      if (!selectedId || !canEditTerritory) return;
+      const pemegang = document.getElementById("fPemegang").value.trim();
+      if (!pemegang) return;
+      const tglSelesai = document.getElementById("fTglSelesai").value || getLocalDateStr(0);
+
+      await push(ref(db, `territories/${selectedId}/riwayat`), {
+        pemegang,
+        tanggal_mulai: document.getElementById("fTglMulai").value || tglSelesai,
+        keterangan: "Selesai & Dikembalikan",
+        tanggal_kembali: tglSelesai
+      });
+      await update(ref(db, `territories/${selectedId}`), {
+        pemegang: "",
+        status: "Tersedia",
+        tanggal_mulai: "",
+        jatuh_tempo_audit: "",
+        audit_notified_at: "",
+        catatan: ""
+      });
+      document.getElementById("finishConfirmBox").style.display = "none";
+      openDetail(selectedId);
+    });
+
+    // === PETA SEBARAN KESELURUHAN ===
+    function renderFullMap() {
+      if (!fullMap) {
+        fullMap = L.map("fullMapCanvas").setView([-6.89, 109.25], 11);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OSM" }).addTo(fullMap);
+        fullMapLayerGroup = L.layerGroup().addTo(fullMap);
+      }
+      fullMap.invalidateSize();
+      fullMapLayerGroup.clearLayers();
+
+      const kdlFilter = document.getElementById("fullMapKdlSelect").value;
+      const statusFilter = document.getElementById("fullMapStatusSelect").value;
+      const boundsList = [];
+
+      Object.values(allTerritories).forEach(t => {
+        if (!isMyTerritory(t) || !t.koordinat || t.koordinat.length === 0) return;
+        if (kdlFilter !== "ALL" && t.kdl !== kdlFilter) return;
+
+        const due = isAuditDue(t);
+        const isWorking = Boolean(t.pemegang && t.pemegang.trim() !== "");
+        const hasHistory = Boolean(t.riwayat && Object.keys(t.riwayat).length > 0);
+
+        if (statusFilter === "avail" && (isWorking || hasHistory)) return;
+        if (statusFilter === "work" && !isWorking) return;
+        if (statusFilter === "DUE" && !due) return;
+        if (statusFilter === "done" && (isWorking || !hasHistory)) return;
+
+        let color = "#10b981";
+        let statusLabel = "Kosong";
+        if (due) { color = "#ef4444"; statusLabel = "Perlu Audit"; }
+        else if (isWorking) { color = "#2563eb"; statusLabel = `Aktif (${t.pemegang})`; }
+        else if (hasHistory) { color = "#f59e0b"; statusLabel = "Selesai"; }
+
+        const poly = L.polygon(t.koordinat, {
+          color,
+          weight: 2,
+          fillOpacity: 0.25
+        });
+
+        poly.bindTooltip(`<strong>#${t.nomor} ${cleanTerritoryName(t)}</strong><br>${statusLabel}`, { sticky: true });
+        poly.on("click", () => {
+          switchPage("pageTerritories");
+          openDetail(t.id);
+        });
+
+        poly.addTo(fullMapLayerGroup);
+        boundsList.push(poly.getBounds());
+      });
+
+      if (boundsList.length > 0) {
+        const groupBounds = boundsList.reduce((acc, b) => acc.extend(b), L.latLngBounds(boundsList[0]));
+        fullMap.fitBounds(groupBounds, { padding: [30, 30] });
+      }
+    }
+
+    document.getElementById("fullMapKdlSelect")?.addEventListener("change", renderFullMap);
+    document.getElementById("fullMapStatusSelect")?.addEventListener("change", renderFullMap);
+
+    // === BULK EDITOR ===
+    function getBulkFilteredTerritories() {
+      const kdlFilter = document.getElementById("bulkFilterKdl")?.value || "ALL";
+      const search = (document.getElementById("bulkSearchInput")?.value || "").toLowerCase().trim();
+      return Object.values(allTerritories)
+        .filter(t => {
+          if (kdlFilter === "UNASSIGNED" && t.kdl) return false;
+          if (kdlFilter.startsWith("KDL ") && t.kdl !== kdlFilter) return false;
+          if (search) {
+            const hay = `${t.nomor} ${t.nama} ${t.kdl || ''} ${t.kategori || ''}`.toLowerCase();
+            if (!hay.includes(search)) return false;
+          }
+          return true;
+        })
+        .sort(sortByTerritoryNumber);
+    }
+
+    function updateBulkSelectionUI() {
+      const count = selectedBulkIds.size;
+      document.getElementById("selectedCount").textContent = count;
+      document.getElementById("bulkSelectedBadge").textContent = `${count} dipilih`;
+      const isBulkActive = document.getElementById("pageBulk").style.display === "block";
+      document.getElementById("bulkActionBar").style.display = (isBulkActive && count > 0) ? "flex" : "none";
+    }
+
+    function renderBulkList() {
+      if (!hasBulkAccess) return;
+      const container = document.getElementById("bulkTerritoryList");
+      const filtered = getBulkFilteredTerritories();
+      if (filtered.length === 0) {
+        container.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--muted);">Tidak ada peta ditemukan.</div>`;
+        return;
+      }
+      container.innerHTML = filtered.map(t => {
+        const checked = selectedBulkIds.has(t.id) ? "checked" : "";
+        return `
+          <div class="list-item" onclick="toggleBulkItem('${t.id}')">
+            <input type="checkbox" class="bulk-check" ${checked} onclick="event.stopPropagation(); toggleBulkItem('${t.id}')">
+            <div class="item-left">
+              <span class="item-num">#${t.nomor}</span>
+              <div class="item-info">
+                <div class="item-title-row">
+                  <div class="item-title">${cleanTerritoryName(t)}</div>
+                  ${t.kunjungan_pw ? `<span class="pw-tag">KPW</span>` : ""}
+                  ${t.daerah_kelompok ? `<span class="dk-tag">Kelompok</span>` : ""}
+                </div>
+                <div class="item-sub">${formatShortKdl(t.kdl)} • ${t.kategori || "Umum"}${t.pemegang ? ` • ${t.pemegang}` : ''}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+      updateBulkSelectionUI();
+    }
+
+    window.toggleBulkItem = function (id) {
+      if (!hasBulkAccess) return;
+      if (selectedBulkIds.has(id)) selectedBulkIds.delete(id);
+      else selectedBulkIds.add(id);
+      renderBulkList();
+    };
+
+    document.getElementById("selectRangeBtn")?.addEventListener("click", () => {
+      const raw = document.getElementById("bulkRangeInput").value.trim();
+      if (!raw) return;
+      const targetNums = new Set();
+      raw.split(",").forEach(part => {
+        const clean = part.trim();
+        if (clean.includes("-")) {
+          const [s, e] = clean.split("-").map(Number);
+          if (!isNaN(s) && !isNaN(e) && s <= e) for (let i = s; i <= e; i++) targetNums.add(i);
+        } else {
+          const n = Number(clean);
+          if (!isNaN(n)) targetNums.add(n);
+        }
+      });
+      Object.values(allTerritories).forEach(t => {
+        if (targetNums.has(parseInt(t.nomor, 10))) selectedBulkIds.add(t.id);
+      });
+      renderBulkList();
+    });
+
+    document.getElementById("bulkSelectAllBtn")?.addEventListener("click", () => {
+      getBulkFilteredTerritories().forEach(t => selectedBulkIds.add(t.id));
+      renderBulkList();
+    });
+    document.getElementById("bulkClearAllBtn")?.addEventListener("click", () => {
+      selectedBulkIds.clear();
+      document.getElementById("bulkRangeInput").value = "";
+      renderBulkList();
+    });
+    document.getElementById("bulkFilterKdl")?.addEventListener("change", renderBulkList);
+    document.getElementById("bulkSearchInput")?.addEventListener("input", renderBulkList);
+
+    document.getElementById("applyBulkBtn")?.addEventListener("click", async () => {
+      if (!hasBulkAccess || selectedBulkIds.size === 0) return;
+      const [actionType, actionVal] = document.getElementById("bulkTargetAction").value.split(":");
+      if (actionType === "reset" && !confirm(`Reset ${selectedBulkIds.size} peta terpilih menjadi Kosong?`)) return;
+
+      const updates = {};
+      selectedBulkIds.forEach(id => {
+        if (actionType === "kdl") updates[`territories/${id}/kdl`] = actionVal;
+        else if (actionType === "pw") updates[`territories/${id}/kunjungan_pw`] = (actionVal === "true");
+        else if (actionType === "dk") updates[`territories/${id}/daerah_kelompok`] = (actionVal === "true");
+        else if (actionType === "cat") updates[`territories/${id}/kategori`] = actionVal;
+        else if (actionType === "reset") {
+          updates[`territories/${id}/pemegang`] = "";
+          updates[`territories/${id}/status`] = "Tersedia";
+          updates[`territories/${id}/tanggal_mulai`] = "";
+          updates[`territories/${id}/jatuh_tempo_audit`] = "";
+          updates[`territories/${id}/audit_notified_at`] = "";
+          updates[`territories/${id}/catatan`] = "";
+        }
+      });
+      await update(ref(db), updates);
+      selectedBulkIds.clear();
+      renderBulkList();
+    });
+
+    // === NAVIGASI HALAMAN ===
+    window.switchPage = function (pageId) {
+      if (pageId === "pageMembers" && !hasTipe1Access) return;
+      if (pageId === "pageBulk" && !hasBulkAccess) return;
+
+      ["pageHome", "pageTerritories", "pageFullMap", "pageMembers", "pageBulk"].forEach(p => {
+        const el = document.getElementById(p);
+        if (el) el.style.display = (p === pageId) ? "block" : "none";
+      });
+
+      document.querySelectorAll(".dtab-btn").forEach(b => b.classList.toggle("active", b.dataset.page === pageId));
+
+      if (pageId === "pageBulk") renderBulkList();
+      if (pageId === "pageFullMap") setTimeout(renderFullMap, 60);
+      updateBulkSelectionUI();
+    };
+
+    window.openFilteredList = function (filterVal, statusFilter = "", tipeFilter = "") {
+      activeKdlFilter = "ALL";
+      tagQuickFilter = tipeFilter;
+      statusQuickFilter = statusFilter;
+
+      if (filterVal === "DUE") statusQuickFilter = "DUE";
+      else if (["PW", "DK", "UMUM"].includes(filterVal)) tagQuickFilter = filterVal;
+      else if (filterVal === "UNASSIGNED" || filterVal.startsWith("KDL ")) activeKdlFilter = filterVal;
+
+      switchPage("pageTerritories");
+      renderList();
+    };
+
+    document.querySelectorAll(".dtab-btn").forEach(btn => {
+      btn.addEventListener("click", () => switchPage(btn.dataset.page));
+    });
+
+    // Tombol Pindah Manual ke Tampilan Mobile
+    document.getElementById("switchMobileBtn")?.addEventListener("click", () => {
+      sessionStorage.removeItem("forceMode");
+      sessionStorage.setItem("forceMode", "mobile");
+      window.location.replace("dashboard.html" + window.location.search);
+    });
+
+    // Filter Modal
+    document.getElementById("openFilterModalBtn")?.addEventListener("click", () => {
+      updateFilterUI();
+      document.getElementById("filterModal").style.display = "flex";
+    });
+    document.getElementById("closeFilterModalBtn")?.addEventListener("click", () => {
+      document.getElementById("filterModal").style.display = "none";
+    });
+    document.querySelectorAll("#filterKdlGroup .fchip").forEach(b => b.addEventListener("click", () => { activeKdlFilter = b.dataset.kdl; updateFilterUI(); }));
+    document.querySelectorAll("#filterTipeGroup .fchip").forEach(b => b.addEventListener("click", () => { tagQuickFilter = b.dataset.tipe; updateFilterUI(); }));
+    document.querySelectorAll("#filterStatusGroup .fchip").forEach(b => b.addEventListener("click", () => { statusQuickFilter = b.dataset.status; updateFilterUI(); }));
+    document.getElementById("applyFilterBtn")?.addEventListener("click", () => {
+      document.getElementById("filterModal").style.display = "none";
+      renderList();
+    });
+    function resetAllFilters() {
+      activeKdlFilter = "ALL";
+      tagQuickFilter = "";
+      statusQuickFilter = "";
+      renderList();
+    }
+    document.getElementById("resetFilterModalBtn")?.addEventListener("click", () => { resetAllFilters(); document.getElementById("filterModal").style.display = "none"; });
+    document.getElementById("resetFilterQuickBtn")?.addEventListener("click", resetAllFilters);
+
+    document.getElementById("searchInput")?.addEventListener("input", renderList);
+    document.getElementById("logoutBtn")?.addEventListener("click", async () => {
+      await signOut(auth);
+      window.location.href = "index.html";
+    });
+
+    // Tema Gelap / Terang
+    const themeToggle = document.getElementById("themeToggle");
+    const themeIcon = document.getElementById("themeIcon");
+    const moonSvg = `<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>`;
+    const sunSvg = `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>`;
+
+    const savedTheme = localStorage.getItem("theme") || "light";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    themeIcon.innerHTML = savedTheme === "dark" ? sunSvg : moonSvg;
+
+    themeToggle?.addEventListener("click", () => {
+      const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      localStorage.setItem("theme", next);
+      themeIcon.innerHTML = next === "dark" ? sunSvg : moonSvg;
+    });
+
+    // S-13 Logs & Export
+    document.getElementById("toggleS13LogBtn")?.addEventListener("click", () => {
+      const listEl = document.getElementById("s13LogList");
+      const chevEl = document.getElementById("s13LogChevron");
+      if (!listEl.innerHTML.trim()) return;
+      const isOpen = listEl.style.display === "flex";
+      listEl.style.display = isOpen ? "none" : "flex";
+      chevEl.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+    });
+
+    function listenS13Logs() {
+      if (!hasTipe1Access) return;
+      onValue(ref(db, "s13_logs"), (snap) => {
+        const logs = Object.values(snap.val() || {}).sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""));
+        const lastBarText = document.getElementById("s13LastLogText");
+        const logListEl = document.getElementById("s13LogList");
+        const chevEl = document.getElementById("s13LogChevron");
+
+        if (logs.length === 0) {
+          lastBarText.textContent = "Belum ada riwayat generate S-13.";
+          logListEl.innerHTML = "";
+          logListEl.style.display = "none";
+          chevEl.style.display = "none";
+          return;
+        }
+
+        const latest = logs[0];
+        lastBarText.textContent = `Terakhir: TD ${latest.tahun_dinas} • oleh ${latest.nama} (${latest.role_label}) • ${formatIndoTimestamp(latest.timestamp)}`;
+        chevEl.style.display = "block";
+        logListEl.innerHTML = logs.slice(0, 5).map(item => `
+          <div class="hist-item">
+            <div style="min-width: 0; flex: 1;">
+              <strong>${item.nama}</strong> <span class="role-tag" style="margin-left: 0.25rem;">${item.role_label}</span>
+              <div style="color: var(--muted); font-size: 0.72rem; margin-top: 0.12rem;">Tahun Dinas ${item.tahun_dinas} • Semua KDL</div>
+            </div>
+            <div style="text-align: right; font-size: 0.72rem; color: var(--muted);">${formatIndoTimestamp(item.timestamp)}</div>
+          </div>
+        `).join("");
+      });
+    }
+
+    document.getElementById("openS13ModalBtn")?.addEventListener("click", () => {
+      if (hasTipe1Access) document.getElementById("s13Modal").style.display = "flex";
+    });
+    document.getElementById("closeS13ModalBtn")?.addEventListener("click", () => {
+      document.getElementById("s13Modal").style.display = "none";
+    });
+    document.getElementById("downloadS13Btn")?.addEventListener("click", async () => {
+      if (!hasTipe1Access) return;
+      const year = parseInt(document.getElementById("s13YearSelect").value, 10);
+      generateS13Pdf(allTerritories, year, "ALL");
+      await push(ref(db, "s13_logs"), {
+        nama: currentProfile.name || currentUser.email.split("@")[0],
+        email: currentUser.email.toLowerCase(),
+        role_label: TIPE1_LABELS[currentProfile.role_daerah] || "Hamba Daerah",
+        tahun_dinas: year,
+        kdl: "ALL",
+        timestamp: new Date().toISOString()
+      });
+      document.getElementById("s13Modal").style.display = "none";
+    });
+
+    // Notifikasi In-App
+    function renderNotifications() {
+      const list = Object.values(allTerritories);
+      const mineList = list.filter(t => isMyTerritory(t));
+      const dueCards = mineList.filter(t => isAuditDue(t)).sort(sortByTerritoryNumber);
+      const unassignedCount = hasTipe1Access ? list.filter(t => !t.kdl).length : 0;
+
+      const totalNotif = dueCards.length + (unassignedCount > 0 ? 1 : 0);
+      const badgeEl = document.getElementById("notifBadgeCount");
+      if (totalNotif > 0) {
+        badgeEl.textContent = totalNotif > 99 ? "99+" : totalNotif;
+        badgeEl.style.display = "flex";
+      } else {
+        badgeEl.style.display = "none";
+      }
+
+      const container = document.getElementById("notifListContainer");
+      const subtitleEl = document.getElementById("notifSubtitle");
+      const viewAllBtn = document.getElementById("notifViewAllDueBtn");
+
+      if (totalNotif === 0) {
+        subtitleEl.textContent = "Semua kartu terpantau aman";
+        viewAllBtn.style.display = "none";
+        container.innerHTML = `<div style="padding: 1.75rem 1rem; text-align: center; color: var(--muted); font-size: 0.84rem;">Belum ada notifikasi penting saat ini.</div>`;
+        return;
+      }
+
+      subtitleEl.textContent = `${totalNotif} pemberitahuan perlu ditindaklanjuti`;
+      viewAllBtn.style.display = dueCards.length > 0 ? "flex" : "none";
+
+      let html = "";
+      if (unassignedCount > 0) {
+        html += `
+          <div class="list-item" onclick="closeNotifModal(); openFilteredList('UNASSIGNED');" style="border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 12px; background: rgba(245, 158, 11, 0.08);">
+            <div class="item-info">
+              <div class="item-title" style="color: var(--warning);">Peta Belum Masuk KDL</div>
+              <div class="item-sub">Ada ${unassignedCount} peta belum diatur wilayah KDL-nya. Klik untuk cek.</div>
+            </div>
+            <span class="badge b-due">Info</span>
+          </div>
+        `;
+      }
+
+      html += dueCards.map(t => `
+        <div class="list-item is-due" onclick="closeNotifModal(); switchPage('pageTerritories'); openDetail('${t.id}');" style="border: 1px solid var(--border); border-radius: 12px;">
+          <div class="item-left">
+            <span class="item-num">#${t.nomor}</span>
+            <div class="item-info">
+              <div class="item-title">${cleanTerritoryName(t)}</div>
+              <div class="item-sub">${t.pemegang} • Jatuh tempo ${t.jatuh_tempo_audit}</div>
+            </div>
+          </div>
+          <span class="badge b-due">Audit</span>
+        </div>
+      `).join("");
+
+      container.innerHTML = html;
+    }
+
+    window.closeNotifModal = function () {
+      document.getElementById("notifModal").style.display = "none";
+    };
+    document.getElementById("notifBellBtn")?.addEventListener("click", () => {
+      renderNotifications();
+      document.getElementById("notifModal").style.display = "flex";
+    });
+    document.getElementById("closeNotifModalBtn")?.addEventListener("click", closeNotifModal);
+    document.getElementById("notifViewAllDueBtn")?.addEventListener("click", () => {
+      closeNotifModal();
+      openFilteredList("DUE");
+    });
+  </script>
+</body>
+</html>

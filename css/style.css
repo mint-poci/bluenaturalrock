@@ -8,6 +8,9 @@
   --glass-border: rgba(255, 255, 255, 0.7);
   --glass-shadow: 0 6px 24px rgba(15, 23, 42, 0.05);
   --input-bg: rgba(255, 255, 255, 0.65);
+  --bg: rgba(255, 255, 255, 0.65);
+  --card: #ffffff;
+  --border: rgba(203, 213, 225, 0.85);
   --text: #0f172a; --muted: #64748b;
   --primary: #2563eb; --success: #10b981;
   --warning: #f59e0b; --danger: #ef4444; --purple: #7c3aed;
@@ -24,6 +27,9 @@
   --glass-border: rgba(255, 255, 255, 0.12);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
   --input-bg: rgba(15, 23, 42, 0.6);
+  --bg: rgba(15, 23, 42, 0.6);
+  --card: #1e293b;
+  --border: rgba(255, 255, 255, 0.14);
   --text: #f8fafc; --muted: #94a3b8;
   --primary: #3b82f6; --purple: #a78bfa; --hover: rgba(51, 65, 85, 0.65);
 }
@@ -151,25 +157,6 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
 .progress-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width 0.3s ease; }
 
 /* Halaman 2: Daftar Peta */
-.filter-strip {
-  display: flex; gap: 0.4rem; overflow-x: auto; padding: 0.1rem 0.25rem 0.45rem 0;
-  margin-bottom: 0.6rem; scrollbar-width: none;
-}
-.filter-strip::-webkit-scrollbar { display: none; }
-.pill-btn {
-  padding: 0.42rem 0.8rem; border-radius: 99px;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  color: var(--muted); font-size: 0.76rem; font-weight: 600;
-  white-space: nowrap; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem;
-}
-.pill-btn.active {
-  background: var(--primary); color: #fff; border-color: transparent;
-  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.28);
-}
-.pill-btn.due-pill.active { background: var(--danger); box-shadow: 0 3px 10px rgba(239, 68, 68, 0.28); }
-.pill-btn.pw-pill.active { background: var(--purple); box-shadow: 0 3px 10px rgba(124, 58, 237, 0.28); }
-
 .search-bar-wrap { display: flex; gap: 0.45rem; margin-bottom: 0.7rem; align-items: center; }
 .search-input-box { position: relative; flex: 1; min-width: 0; }
 .search-input-box svg {
@@ -181,13 +168,6 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   border: 1px solid var(--glass-border); background: var(--glass-bg);
   color: var(--text); font-size: 0.84rem;
 }
-.btn-bulk-icon {
-  height: 38px; padding: 0 0.75rem; border-radius: 12px;
-  border: 1px solid var(--glass-border); background: var(--glass-bg);
-  color: var(--text); font-size: 0.76rem; font-weight: 600;
-  display: none; align-items: center; gap: 0.35rem; cursor: pointer; flex-shrink: 0;
-}
-.btn-bulk-icon.active { background: var(--primary); color: #fff; border-color: transparent; }
 
 .bulk-subbar {
   display: none; justify-content: space-between; align-items: center;
@@ -230,26 +210,6 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
 .b-avail { background: rgba(16, 185, 129, 0.14); color: var(--success); }
 .b-work { background: rgba(37, 99, 235, 0.14); color: var(--primary); }
 .b-due { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
-
-/* Bilah Bulk Assign Melayang */
-.bulk-action-bar {
-  position: fixed; bottom: 4.8rem; left: 50%; transform: translateX(-50%);
-  width: calc(100% - 1.5rem); max-width: 640px;
-  background: var(--glass-strong);
-  backdrop-filter: blur(22px) saturate(190%);
-  -webkit-backdrop-filter: blur(22px) saturate(190%);
-  border: 1.5px solid var(--primary);
-  border-radius: 16px; padding: 0.7rem 0.9rem;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.18);
-  display: none; align-items: center; justify-content: space-between;
-  gap: 0.5rem; z-index: 120;
-}
-.bulk-action-bar select {
-  padding: 0.45rem 0.65rem; border-radius: 10px;
-  border: 1px solid var(--glass-border);
-  background: var(--input-bg); color: var(--text); font-size: 0.78rem; font-weight: 600;
-  max-width: 170px;
-}
 
 /* Bottom Navigation Bar Floating Glass */
 .bottom-nav {
@@ -321,39 +281,8 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
 .field input:disabled, .field select:disabled { opacity: 0.65; cursor: not-allowed; }
 .field input[type="date"] { -webkit-appearance: none; appearance: none; min-height: 2.65rem; line-height: 1.2; }
 .field input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
 
-.quick-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
-.chip-btn {
-  font-size: 0.7rem; font-weight: 600; padding: 0.24rem 0.55rem; border-radius: 99px;
-  border: 1px solid var(--glass-border); background: var(--input-bg); color: var(--muted);
-  cursor: pointer; transition: all 0.12s;
-}
-.chip-btn:hover, .chip-btn:active { color: var(--primary); border-color: var(--primary); }
-
-.attr-panel {
-  background: rgba(148, 163, 184, 0.08);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px; padding: 0.85rem; margin-bottom: 1rem;
-}
-.attr-toggle-row {
-  display: flex; justify-content: space-between; align-items: center;
-  cursor: pointer; font-size: 0.8rem; font-weight: 700; color: var(--text);
-}
-.attr-body { margin-top: 0.8rem; display: none; }
-.check-row {
-  display: flex; align-items: center; gap: 0.55rem; cursor: pointer;
-  font-size: 0.82rem; font-weight: 600; color: var(--text); padding: 0.3rem 0;
-}
-.check-row input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--purple); flex-shrink: 0; }
-
-.viewonly-notice {
-  font-size: 0.75rem; color: var(--muted); background: rgba(100, 116, 139, 0.12);
-  border: 1px solid rgba(100, 116, 139, 0.2); border-radius: 12px;
-  padding: 0.55rem 0.75rem; margin-bottom: 0.8rem; display: none;
-}
-
-.btn-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.15rem; }
-.action-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
 .btn {
   width: 100%; padding: 0.75rem; border-radius: 14px; border: none;
   font-weight: 600; font-size: 0.86rem; cursor: pointer;
@@ -362,15 +291,12 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
 .btn-primary { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; box-shadow: 0 6px 18px rgba(37, 99, 235, 0.28); }
 .btn-wa { background: rgba(37, 211, 102, 0.16); color: #16a34a; border: 1px solid rgba(37, 211, 102, 0.35); }
 [data-theme="dark"] .btn-wa { color: #4ade80; }
-.btn-warning { background: rgba(245, 158, 11, 0.16); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.26); }
-.btn-success { background: rgba(16, 185, 129, 0.16); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.26); }
 .btn-danger-outline {
   width: 100%; padding: 0.7rem; border-radius: 14px; font-weight: 600; font-size: 0.84rem;
   background: rgba(239, 68, 68, 0.1); color: var(--danger);
   border: 1px solid rgba(239, 68, 68, 0.25); cursor: pointer;
 }
 
-.history-box h4 { font-size: 0.82rem; color: var(--muted); }
 .hist-item {
   font-size: 0.78rem; padding: 0.55rem 0; border-bottom: 1px solid var(--glass-border);
   display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
@@ -458,198 +384,10 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   border: 1px solid rgba(16, 185, 129, 0.28);
   white-space: nowrap;
 }
-
 [data-theme="dark"] .dk-tag {
   background: rgba(16, 185, 129, 0.2);
   color: #34d399;
   border-color: rgba(52, 211, 153, 0.32);
-}
-
-.pill-btn.dk-pill.active {
-  background: #059669;
-  border-color: #059669;
-  color: #ffffff;
-}
-
-/* Baris 1: iOS Segmented Control Wilayah KDL */
-.kdl-segmented {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.25rem;
-  background: var(--card);
-  border: 1px solid var(--border);
-  padding: 0.25rem;
-  border-radius: 14px;
-  margin-bottom: 0.65rem;
-}
-
-.seg-btn {
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-family: inherit;
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 0.45rem 0.2rem;
-  border-radius: 10px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.1rem;
-  transition: all 0.18s ease;
-  white-space: nowrap;
-}
-
-.seg-btn span {
-  font-size: 0.66rem;
-  font-weight: 700;
-  opacity: 0.8;
-}
-
-.seg-btn.active {
-  background: var(--primary);
-  color: #ffffff;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
-}
-
-.seg-btn.active span {
-  opacity: 0.95;
-}
-
-/* Titik indikator filter aktif di tombol Filter */
-.filter-dot {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--primary);
-}
-
-/* Bar ringkas filter aktif di bawah search bar */
-.active-filter-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: rgba(37, 99, 235, 0.08);
-  border: 1px solid rgba(37, 99, 235, 0.2);
-  color: var(--primary);
-  padding: 0.42rem 0.75rem;
-  border-radius: 10px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  margin-bottom: 0.65rem;
-}
-
-.active-filter-bar button {
-  background: none;
-  border: none;
-  color: var(--primary);
-  font-weight: 700;
-  font-size: 0.75rem;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-/* Grid pilihan di Modal Filter */
-.filter-chip-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.45rem;
-}
-
-.fchip {
-  padding: 0.55rem 0.65rem;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: center;
-  transition: all 0.15s ease;
-}
-
-.fchip.active {
-  background: rgba(37, 99, 235, 0.12);
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-/* Sub-Navbar Kategori Filter */
-.cat-filter-box {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 0.35rem;
-  margin-bottom: 0.65rem;
-}
-
-.cat-tabs {
-  display: flex;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 0.45rem;
-  gap: 0.25rem;
-}
-
-.cat-tab {
-  flex: 1;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  padding: 0.42rem 0.25rem;
-  font-family: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--muted);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  transition: all 0.15s ease;
-}
-
-.cat-tab.active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
-}
-
-.cat-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--primary);
-}
-
-.cat-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  padding: 0.1rem 0.15rem 0.15rem;
-}
-
-.cpill {
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 0.73rem;
-  font-weight: 600;
-  padding: 0.34rem 0.62rem;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.cpill.active {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #ffffff;
 }
 
 /* Tombol Filter di Sebelah Search Bar */
@@ -671,13 +409,11 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   flex-shrink: 0;
   transition: all 0.15s ease;
 }
-
 .btn-filter-trigger.has-active {
   border-color: var(--primary);
   background: rgba(37, 99, 235, 0.08);
   color: var(--primary);
 }
-
 .filter-count-badge {
   display: inline-flex;
   align-items: center;
@@ -700,13 +436,7 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   gap: 0.5rem;
   margin-bottom: 0.65rem;
 }
-
-.active-filter-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
+.active-filter-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .af-tag {
   display: inline-flex;
   align-items: center;
@@ -717,7 +447,6 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   background: rgba(37, 99, 235, 0.1);
   color: var(--primary);
 }
-
 .btn-reset-mini {
   background: none;
   border: none;
@@ -736,7 +465,6 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   grid-template-columns: repeat(2, 1fr);
   gap: 0.45rem;
 }
-
 .fchip {
   padding: 0.55rem 0.65rem;
   border-radius: 10px;
@@ -750,7 +478,6 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   text-align: center;
   transition: all 0.15s ease;
 }
-
 .fchip.active {
   background: var(--primary);
   border-color: var(--primary);
@@ -758,25 +485,15 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
 }
 
 /* === BULK EDITOR PAGE === */
-.bulk-control-card {
-  margin-bottom: 0.75rem;
-}
-
-.bulk-range-row {
-  display: flex;
-  gap: 0.45rem;
-  align-items: center;
-}
-
+.bulk-control-card { margin-bottom: 0.75rem; }
+.bulk-range-row { display: flex; gap: 0.45rem; align-items: center; }
 .bulk-filter-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
   margin-bottom: 0.65rem;
 }
-
-.bulk-input,
-.bulk-select {
+.bulk-input, .bulk-select {
   width: 100%;
   height: 40px;
   padding: 0 0.75rem;
@@ -790,12 +507,7 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   outline: none;
   transition: border-color 0.15s ease;
 }
-
-.bulk-input:focus,
-.bulk-select:focus {
-  border-color: var(--primary);
-}
-
+.bulk-input:focus, .bulk-select:focus { border-color: var(--primary); }
 .btn-bulk-primary {
   height: 40px;
   padding: 0 1rem;
@@ -809,7 +521,6 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   cursor: pointer;
   flex-shrink: 0;
 }
-
 .bulk-quick-actions {
   display: flex;
   justify-content: space-between;
@@ -817,7 +528,6 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   gap: 0.5rem;
   padding-top: 0.15rem;
 }
-
 .btn-bulk-ghost {
   padding: 0.42rem 0.75rem;
   border-radius: 9px;
@@ -829,12 +539,8 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   font-weight: 600;
   cursor: pointer;
 }
+.btn-bulk-ghost.muted { color: var(--muted); }
 
-.btn-bulk-ghost.muted {
-  color: var(--muted);
-}
-
-/* Perbaikan Posisi & Ukuran Floating Bulk Action Bar */
 .bulk-action-bar {
   position: fixed;
   left: 50%;
@@ -853,7 +559,6 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   gap: 0.5rem;
   z-index: 95;
 }
-
 .bulk-action-bar select {
   height: 36px;
   max-width: 175px;
@@ -866,7 +571,6 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   font-size: 0.78rem;
   font-weight: 600;
 }
-
 .bulk-action-bar .btn-sm {
   height: 36px;
   padding: 0 0.85rem;
@@ -875,26 +579,6 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   font-weight: 600;
 }
 
-.modal textarea {
-  width: 100%;
-  padding: 0.7rem 0.85rem;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 0.86rem;
-  line-height: 1.45;
-  resize: vertical;
-  min-height: 82px;
-  outline: none;
-  transition: border-color 0.15s ease;
-}
-
-.modal textarea:focus {
-  border-color: var(--primary);
-}
-
 /* Grid 2/3 Pemegang + 1/3 Tanggal */
 .holder-date-grid {
   display: grid;
@@ -902,11 +586,7 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   gap: 0.5rem;
   align-items: end;
 }
-
-.holder-date-grid .field {
-  min-width: 0;
-}
-
+.holder-date-grid .field { min-width: 0; }
 .holder-date-grid input[type="date"] {
   padding-left: 0.55rem;
   padding-right: 0.45rem;
@@ -914,158 +594,15 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   letter-spacing: -0.02em;
 }
 
-/* Styling Panel Lipat Edit Info & Atribut Peta */
-.attr-panel {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--bg);
-  overflow: hidden;
-}
-
-.attr-toggle-btn {
-  width: 100%;
-  background: none;
-  border: none;
-  padding: 0.65rem 0.85rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-family: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text);
-  cursor: pointer;
-}
-
-.attr-body {
-  padding: 0.25rem 0.85rem 0.85rem;
-  border-top: 1px solid var(--border);
-}
-
-/* Riwayat Pengerjaan Subtle di Paling Bawah */
-.subtle-history-wrap {
-  margin-top: 0.85rem;
-  padding-top: 0.65rem;
-  border-top: 1px solid var(--border);
-}
-
-.subtle-history-bar {
-  width: 100%;
-  background: none;
-  border: none;
-  padding: 0.25rem 0.1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  font-family: inherit;
-  font-size: 0.73rem;
-  color: var(--muted);
-  cursor: pointer;
-  text-align: left;
-  opacity: 0.85;
-}
-
-.subtle-history-bar:hover {
-  opacity: 1;
-}
-
-.subtle-history-wrap .hist-item {
-  opacity: 0.82;
-  font-size: 0.75rem;
-}
-
-/* Grid 2/3 Pemegang + 1/3 Tanggal */
-.holder-date-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(118px, 1fr);
-  gap: 0.5rem;
-  align-items: end;
-}
-
-.holder-date-grid .field {
-  min-width: 0;
-}
-
-.holder-date-grid input[type="date"] {
-  padding-left: 0.55rem;
-  padding-right: 0.45rem;
-  font-size: 0.78rem;
-  letter-spacing: -0.02em;
-}
-
-/* Styling Panel Lipat Edit Info & Atribut Peta */
-.attr-panel {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--bg);
-  overflow: hidden;
-}
-
-.attr-toggle-btn {
-  width: 100%;
-  background: none;
-  border: none;
-  padding: 0.65rem 0.85rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-family: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text);
-  cursor: pointer;
-}
-
-.attr-body {
-  padding: 0.25rem 0.85rem 0.85rem;
-  border-top: 1px solid var(--border);
-}
-
-/* Riwayat Pengerjaan Subtle di Paling Bawah */
-.subtle-history-wrap {
-  margin-top: 0.85rem;
-  padding-top: 0.65rem;
-  border-top: 1px solid var(--border);
-}
-
-.subtle-history-bar {
-  width: 100%;
-  background: none;
-  border: none;
-  padding: 0.25rem 0.1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  font-family: inherit;
-  font-size: 0.73rem;
-  color: var(--muted);
-  cursor: pointer;
-  text-align: left;
-  opacity: 0.85;
-}
-
-.subtle-history-bar:hover {
-  opacity: 1;
-}
-
-.subtle-history-wrap .hist-item {
-  opacity: 0.82;
-  font-size: 0.75rem;
-}
-
-/* === PERBAIKAN KOTAK CATATAN & TOMBOL SIMPAN / KIRIM WA === */
-
-/* 1. Kotak Catatan agar Kontras, Tegas, dan Nyaman Dibaca */
+/* Kotak Catatan & Tombol Simpan / Kirim WA */
 .modal textarea#fCatatan,
 .field textarea {
   display: block;
   width: 100%;
   box-sizing: border-box;
-  background: var(--card);
+  background: var(--input-bg, #ffffff) !important;
   color: var(--text);
-  border: 1.5px solid var(--border);
+  border: 1.5px solid var(--border, #cbd5e1) !important;
   border-radius: 12px;
   padding: 0.75rem 0.9rem;
   font-family: inherit;
@@ -1076,7 +613,6 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-
 .modal textarea#fCatatan:focus,
 .field textarea:focus {
   outline: none;
@@ -1084,15 +620,14 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
-/* 2. Tombol Simpan & Kirim WA Sejajar Sebelahan */
 #primaryActionRow.btn-group,
 .modal .btn-group {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.55rem;
   align-items: stretch;
+  margin-bottom: 1.15rem;
 }
-
 #primaryActionRow .btn,
 .modal .btn-group .btn {
   width: 100%;
@@ -1103,31 +638,65 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   gap: 0.4rem;
 }
 
-/* Menyamakan latar terang & garis tepi Catatan + Edit Info dengan input lainnya */
-.modal textarea#fCatatan,
-.field textarea {
-  background: var(--input-bg, #ffffff) !important;
-  border: 1.5px solid var(--border, #cbd5e1) !important;
-  border-radius: 12px;
-  color: var(--text);
-  padding: 0.75rem 0.9rem;
-  min-height: 88px;
-}
-
+/* Panel Lipat Edit Info & Atribut Peta */
 .attr-panel {
   background: var(--input-bg, #ffffff) !important;
   border: 1.5px solid var(--border, #cbd5e1) !important;
   border-radius: 12px;
+  overflow: hidden;
+}
+.attr-toggle-btn {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
+.attr-body {
+  padding: 0.25rem 0.85rem 0.85rem;
+  border-top: 1px solid var(--border);
 }
 
-/* Mode Gelap agar tetap nyaman di mata */
 [data-theme="dark"] .modal textarea#fCatatan,
 [data-theme="dark"] .field textarea,
 [data-theme="dark"] .attr-panel {
   background: var(--input-bg, #1e293b) !important;
   border-color: var(--border, #334155) !important;
 }
-/* Banner Mode Lihat Saja (iOS Callout Style) */
+
+/* Riwayat Pengerjaan Subtle di Paling Bawah */
+.subtle-history-wrap {
+  margin-top: 0.85rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border);
+}
+.subtle-history-bar {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.25rem 0.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-family: inherit;
+  font-size: 0.73rem;
+  color: var(--muted);
+  cursor: pointer;
+  text-align: left;
+  opacity: 0.85;
+}
+.subtle-history-bar:hover { opacity: 1; }
+.subtle-history-wrap .hist-item { opacity: 0.82; font-size: 0.75rem; }
+
+/* Banner Mode Lihat Saja */
 .view-only-banner {
   display: flex !important;
   align-items: flex-start;
@@ -1139,11 +708,7 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   border: 1px solid rgba(37, 99, 235, 0.22);
   color: var(--text);
 }
-
-.view-only-banner[style*="display: none"] {
-  display: none !important;
-}
-
+.view-only-banner[style*="display: none"] { display: none !important; }
 .vo-icon {
   display: inline-flex;
   align-items: center;
@@ -1156,26 +721,9 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   flex-shrink: 0;
   margin-top: 1px;
 }
-
-.vo-text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.12rem;
-  min-width: 0;
-}
-
-.vo-text strong {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--primary);
-  line-height: 1.25;
-}
-
-.vo-text span {
-  font-size: 0.74rem;
-  color: var(--muted);
-  line-height: 1.38;
-}
+.vo-text { display: flex; flex-direction: column; gap: 0.12rem; min-width: 0; }
+.vo-text strong { font-size: 0.78rem; font-weight: 700; color: var(--primary); line-height: 1.25; }
+.vo-text span { font-size: 0.74rem; color: var(--muted); line-height: 1.38; }
 
 [data-theme="dark"] .view-only-banner {
   background: rgba(59, 130, 246, 0.12);
@@ -1190,10 +738,15 @@ main { max-width: 680px; width: 100%; margin: 0.9rem auto; padding: 0 0.95rem; }
   gap: 0.35rem;
   min-width: 0;
 }
-
 .kdl-inline-tag {
   font-size: 0.68rem !important;
   padding: 0.14rem 0.45rem !important;
   line-height: 1.25;
   cursor: pointer;
 }
+
+.b-done {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+[data-theme="dark"] .b-done { color: #fbbf24; }

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#2563eb">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Terita">
@@ -148,6 +149,15 @@
       errorBox.style.display = "block";
     }
 
+    function redirectToApp() {
+      const forceMode = sessionStorage.getItem("forceMode");
+      const isDesktop = window.innerWidth >= 1024;
+      const targetPage = (isDesktop && forceMode !== "mobile") || forceMode === "desktop"
+        ? "desktop.html"
+        : "dashboard.html";
+      window.location.replace(targetPage + window.location.search);
+    }
+
     // Deteksi jika dibuka dari browser internal WhatsApp / Instagram / Line di HP
     const ua = navigator.userAgent || "";
     if (/WhatsApp|FBAN|FBAV|Instagram|Line/i.test(ua)) {
@@ -157,7 +167,7 @@
     // Tangani hasil jika terjadi fallback redirect
     getRedirectResult(auth)
       .then((res) => {
-        if (res && res.user) window.location.href = "dashboard.html";
+        if (res && res.user) redirectToApp();
       })
       .catch((err) => {
         if (err && err.code) {
@@ -166,7 +176,7 @@
       });
 
     onAuthStateChanged(auth, (user) => {
-      if (user) window.location.href = "dashboard.html";
+      if (user) redirectToApp();
     });
 
     document.getElementById("authForm").addEventListener("submit", async (e) => {
@@ -182,7 +192,7 @@
           document.getElementById("email").value.trim(),
           document.getElementById("password").value
         );
-        window.location.href = "dashboard.html";
+        redirectToApp();
       } catch (err) {
         submitBtn.disabled = false;
         submitBtn.textContent = "Masuk";
@@ -197,7 +207,7 @@
 
       try {
         await signInWithPopup(auth, provider);
-        window.location.href = "dashboard.html";
+        redirectToApp();
       } catch (err) {
         googleBtn.disabled = false;
         googleBtnText.textContent = "Lanjutkan dengan Google";
