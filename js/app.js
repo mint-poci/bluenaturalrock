@@ -555,7 +555,7 @@ function updateFilterUI() {
 
   if (statusQuickFilter === "work") activeTags.push("Aktif");
   else if (statusQuickFilter === "DUE") activeTags.push("Perlu Audit");
-  else if (statusQuickFilter === "done") activeTags.push("Pernah");
+  else if (statusQuickFilter === "done") activeTags.push("Selesai");
   else if (statusQuickFilter === "avail") activeTags.push("Kosong");
 
   const triggerBtn = document.getElementById("openFilterModalBtn");
@@ -637,7 +637,7 @@ function renderList() {
     let badge = `<span class="badge b-avail">Kosong</span>`;
     if (due) badge = `<span class="badge b-due">Audit</span>`;
     else if (isWorking) badge = `<span class="badge b-work">Aktif</span>`;
-    else if (hasHistory) badge = `<span class="badge b-done">Pernah</span>`;
+    else if (hasHistory) badge = `<span class="badge b-done">Selesai</span>`;
 
     const kdlLabel = formatShortKdl(t.kdl);
     const katLabel = t.kategori || "Umum";
