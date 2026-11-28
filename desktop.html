@@ -457,11 +457,20 @@
       margin-bottom: 1rem;
     }
 
+    .s13-horizontal-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
     .s13-card-top {
       display: flex;
       align-items: center;
       gap: 0.9rem;
-      margin-bottom: 0.95rem;
+      flex: 1;
+      min-width: 260px;
     }
 
     .s13-doc-icon {
@@ -1517,7 +1526,7 @@
               </div>
               <div class="field">
                 <label for="fTglMulai">Mulai</label>
-                <input type="date" id="fTglMulai">
+                <input type="date" id="fTglMulai" lang="id-ID">
               </div>
             </div>
 
@@ -1595,7 +1604,7 @@
                 </div>
               </div>
               <div class="field">
-                <input type="date" id="fTglSelesai">
+                <input type="date" id="fTglSelesai" lang="id-ID">
               </div>
               <div class="btn-group">
                 <button type="button" class="btn-sm" id="cancelFinishBtn" style="justify-content: center; padding: 0.6rem;">Batal</button>
@@ -1989,6 +1998,14 @@
       const d = new Date();
       d.setDate(d.getDate() + offsetDays);
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    function formatDateDDMMYYYY(dateStr) {
+      if (!dateStr) return "-";
+      const clean = String(dateStr).trim().split("T")[0];
+      const parts = clean.split("-");
+      if (parts.length !== 3) return dateStr;
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
 
     function normalizeMember(m) {
@@ -2560,7 +2577,8 @@
       }
 
       const [, latest] = entries[0];
-      summaryEl.textContent = `Riwayat (${entries.length}): Terakhir ${latest.pemegang} (${latest.tanggal_kembali || latest.tanggal_mulai || '-'})`;
+      const latestDateLabel = formatDateDDMMYYYY(latest.tanggal_kembali || latest.tanggal_mulai);
+      summaryEl.textContent = `Riwayat (${entries.length}): Terakhir ${latest.pemegang} (${latestDateLabel})`;
       chevEl.style.display = "block";
       toggleBtn.style.display = hasTipe1Access ? "inline-flex" : "none";
       toggleBtn.textContent = editHistoryMode ? "Selesai Kelola" : "Kelola Riwayat";
@@ -2572,7 +2590,7 @@
             <div style="color:var(--muted); font-size:0.72rem;">${r.keterangan || ''}</div>
           </div>
           <div style="text-align:right; font-size:0.72rem; color:var(--muted); flex-shrink: 0;">
-            ${r.tanggal_mulai || '-'}<br>s/d ${r.tanggal_kembali || '-'}
+            ${formatDateDDMMYYYY(r.tanggal_mulai)}<br>s/d ${formatDateDDMMYYYY(r.tanggal_kembali)}
           </div>
           ${editHistoryMode ? `
             <button type="button" class="btn-sm btn-logout" style="padding: 0.25rem 0.5rem; margin-left: 0.35rem; font-size: 0.72rem;" onclick="deleteHistoryItem('${histKey}', '${(r.pemegang || '').replace(/'/g, "\\'")}')">
@@ -2771,7 +2789,7 @@
       const lines = [
         `*PETA DAERAH — ${namaPeta.toUpperCase()}*`,
         pemegangVal ? `• Pemegang: ${pemegangVal}` : `• Status: Tersedia`,
-        tglMulaiVal ? `• Mulai: ${tglMulaiVal}` : null,
+        tglMulaiVal ? `• Mulai: ${formatDateDDMMYYYY(tglMulaiVal)}` : null,
         catatanVal ? `• Catatan: ${catatanVal}` : null,
         mapsLink
       ].filter(Boolean);
@@ -2788,7 +2806,7 @@
       await push(ref(db, `territories/${selectedId}/riwayat`), {
         pemegang,
         tanggal_mulai: document.getElementById("fTglMulai").value || today,
-        keterangan: `Audit 3 Bln (${today}): Lanjut`,
+        keterangan: `Audit 3 Bln (${formatDateDDMMYYYY(today)}): Lanjut`,
         tanggal_kembali: today
       });
       await update(ref(db, `territories/${selectedId}`), {
@@ -3219,7 +3237,7 @@
             <span class="item-num">#${t.nomor}</span>
             <div class="item-info">
               <div class="item-title">${cleanTerritoryName(t)}</div>
-              <div class="item-sub">${t.pemegang} • Jatuh tempo ${t.jatuh_tempo_audit}</div>
+              <div class="item-sub">${t.pemegang} • Jatuh tempo ${formatDateDDMMYYYY(t.jatuh_tempo_audit)}</div>
             </div>
           </div>
           <span class="badge b-due">Audit</span>
