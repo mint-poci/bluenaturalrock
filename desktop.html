@@ -4160,7 +4160,7 @@
           }
         });
 
-        const isActiveNow = typeof isWorkedTerritory === "function" && isWorkedTerritory(t);
+        const isActiveNow = Boolean(t.pemegang && t.pemegang.trim() !== "");
         if (isActiveNow) {
           const activeStartY = extractYear(t.tanggal_mulai || t.tgl_mulai || t.tgl_keluar || t.tgl_pinjam) || curYear;
           for (let y = activeStartY; y <= curYear; y++) years.add(y);
@@ -4314,7 +4314,7 @@
           }
         });
 
-        const isActiveNow = typeof isWorkedTerritory === "function" && isWorkedTerritory(t);
+        const isActiveNow = Boolean(t.pemegang && t.pemegang.trim() !== "");
         if (isActiveNow) {
           const activeStartY = extractYear(t.tanggal_mulai || t.tgl_mulai || t.tgl_keluar || t.tgl_pinjam) || curYear;
           for (let y = activeStartY; y <= curYear; y++) years.add(y);
@@ -4428,7 +4428,7 @@
           }
         });
 
-        const isActiveNow = typeof isWorkedTerritory === "function" && isWorkedTerritory(t);
+        const isActiveNow = Boolean(t.pemegang && t.pemegang.trim() !== "");
         if (isActiveNow) {
           const activeStartY = extractYear(t.tanggal_mulai || t.tgl_mulai || t.tgl_keluar || t.tgl_pinjam) || curYear;
           for (let y = activeStartY; y <= curYear; y++) years.add(y);
