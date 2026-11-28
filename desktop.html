@@ -1025,7 +1025,7 @@
       border-bottom: none;
     }
 
-    /* HALAMAN 3: PETA SEBARAN KESELURUHAN */
+    /* HALAMAN 3: PETA SEBARAN KESELURUHAN + FLOATING EDITOR */
     .fullmap-toolbar {
       display: flex;
       flex-wrap: wrap;
@@ -1079,13 +1079,65 @@
       display: inline-block;
     }
 
-    #fullMapCanvas {
+    .fullmap-stage {
+      position: relative;
       width: 100%;
       height: calc(100vh - 165px);
+    }
+
+    #fullMapCanvas {
+      width: 100%;
+      height: 100%;
       border-radius: 20px;
       border: 1px solid var(--border);
       box-shadow: var(--glass-shadow);
       z-index: 1;
+    }
+
+    /* CARD EDITOR MELAYANG DI ATAS PETA SEBARAN */
+    .fullmap-floating-editor {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 410px;
+      max-width: calc(100% - 32px);
+      max-height: calc(100% - 32px);
+      overflow-y: auto;
+      background: var(--glass-strong);
+      backdrop-filter: blur(22px) saturate(180%);
+      -webkit-backdrop-filter: blur(22px) saturate(180%);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 18px 44px rgba(15, 23, 42, 0.24);
+      border-radius: 20px;
+      padding: 1.2rem 1.3rem;
+      z-index: 1000;
+      display: none;
+      animation: floatSlideIn 0.18s ease-out;
+    }
+
+    @keyframes floatSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .fm-save-toast {
+      display: none;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.55rem 0.8rem;
+      margin-bottom: 0.75rem;
+      border-radius: 11px;
+      background: rgba(16, 185, 129, 0.14);
+      border: 1px solid rgba(16, 185, 129, 0.32);
+      color: var(--success);
+      font-size: 0.78rem;
+      font-weight: 600;
     }
 
     /* HALAMAN 4: ANGGOTA & BULK */
@@ -1412,7 +1464,7 @@
         </div>
       </div>
 
-      <!-- S-13 Export Card (Lebar Penuh di Bawah Grid Utama) -->
+      <!-- S-13 Export Card -->
       <div class="s13-feature-card" id="s13FeatureCard" style="display: none;">
         <div class="s13-horizontal-row">
           <div class="s13-card-top">
@@ -1629,7 +1681,7 @@
       </div>
     </section>
 
-    <!-- HALAMAN 3: PETA SEBARAN KESELURUHAN -->
+    <!-- HALAMAN 3: PETA SEBARAN KESELURUHAN + FLOATING EDITOR -->
     <section id="pageFullMap" style="display: none;">
       <div class="fullmap-toolbar">
         <div class="fullmap-controls">
@@ -1655,7 +1707,150 @@
           <span><i style="background: #ef4444;"></i> Perlu Audit</span>
         </div>
       </div>
-      <div id="fullMapCanvas"></div>
+
+      <div class="fullmap-stage">
+        <div id="fullMapCanvas"></div>
+
+        <!-- CARD EDITOR MELAYANG DI ATAS PETA SEBARAN -->
+        <div class="fullmap-floating-editor" id="fmFloatingCard">
+          <div class="detail-header" style="margin-bottom: 0.75rem;">
+            <div style="min-width: 0; flex: 1;">
+              <span class="kdl-badge-mini" id="fmKdlBadge">KDL Pemalang</span>
+              <h3 id="fmNama" style="font-size: 1.08rem; line-height: 1.3;">#1 — Nama Daerah</h3>
+            </div>
+            <div class="detail-header-actions">
+              <button type="button" class="btn-sm" id="fmOpenMyMapsBtn" style="display: none; border-color: rgba(37, 99, 235, 0.35); color: var(--primary); padding: 0.38rem 0.65rem;">
+                <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                <span id="fmOpenMyMapsText">My Maps</span>
+              </button>
+              <button class="close-btn" id="fmCloseBtn" type="button" title="Tutup Editor Melayang" style="width: 32px; height: 32px;">
+                <svg class="ico ico-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="fm-save-toast" id="fmSaveToast">
+            <svg class="ico ico-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            <span id="fmSaveToastText">Perubahan berhasil disimpan.</span>
+          </div>
+
+          <div id="fmViewOnlyNotice" class="view-only-banner" style="display: none;">
+            <div class="vo-icon">
+              <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+            <div class="vo-text">
+              <strong>Mode Lihat Saja</strong>
+              <span>Hubungi Pengawas atau Hamba Kelompok untuk memperbarui data peta.</span>
+            </div>
+          </div>
+
+          <div class="holder-date-grid">
+            <div class="field" style="margin-bottom: 0.65rem;">
+              <label for="fmPemegang">Pemegang / Yang Mengerjakan</label>
+              <input type="text" id="fmPemegang" placeholder="Kosongkan jika tersedia">
+            </div>
+            <div class="field" style="margin-bottom: 0.65rem;">
+              <label for="fmTglMulai">Mulai</label>
+              <input type="date" id="fmTglMulai" lang="id-ID">
+            </div>
+          </div>
+
+          <div class="field" style="margin-bottom: 0.65rem;">
+            <label for="fmCatatan">Catatan</label>
+            <textarea id="fmCatatan" rows="2" placeholder="Tulis catatan atau keterangan tambahan..."></textarea>
+          </div>
+
+          <div class="attr-panel" id="fmAttrPanel">
+            <button type="button" class="attr-toggle-btn" id="fmToggleAttrBtn" style="padding: 0.58rem 0.8rem; font-size: 0.78rem;">
+              <span>Edit Info & Atribut Peta</span>
+              <svg class="ico ico-sm" id="fmAttrChevron" viewBox="0 0 24 24" style="transition: transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="attr-body" id="fmAttrBody" style="display: none; padding: 0.65rem 0.8rem 0.75rem;">
+              <div class="field" style="margin-bottom: 0.6rem;">
+                <label for="fmNamaDaerah">Nama Daerah</label>
+                <input type="text" id="fmNamaDaerah">
+              </div>
+              <div class="field-row">
+                <div class="field" style="margin-bottom: 0.6rem;">
+                  <label for="fmKategori">Kategori</label>
+                  <select id="fmKategori">
+                    <option value="Umum">Umum</option>
+                    <option value="Pertokoan">Pertokoan</option>
+                    <option value="Perumahan">Perumahan</option>
+                    <option value="Kampung / Desa">Kampung / Desa</option>
+                  </select>
+                </div>
+                <div class="field" id="fmKdlField" style="margin-bottom: 0.6rem;">
+                  <label for="fmKdlPeta">Wilayah KDL</label>
+                  <select id="fmKdlPeta">
+                    <option value="">Belum diatur</option>
+                    <option value="KDL Pemalang">KDL Pemalang</option>
+                    <option value="KDL Tegal Timur">KDL Tegal Timur</option>
+                    <option value="KDL Tegal Barat">KDL Tegal Barat</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field" style="margin-bottom: 0.6rem;">
+                <label for="fmMyMapsUrl">Link Google My Maps (Opsional)</label>
+                <input type="url" id="fmMyMapsUrl" placeholder="https://www.google.com/maps/d/...">
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 0.45rem; margin-top: 0.25rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; color: var(--text); margin: 0; cursor: pointer;">
+                  <input type="checkbox" id="fmKunjunganPw" style="width: auto; accent-color: var(--primary);">
+                  <span>Tandai sebagai Kunjungan PW</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; color: var(--text); margin: 0; cursor: pointer;">
+                  <input type="checkbox" id="fmDaerahKelompok" style="width: auto; accent-color: var(--primary);">
+                  <span>Tandai sebagai Daerah Kelompok</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="btn-group" id="fmPrimaryActionRow" style="margin-top: 0.75rem;">
+            <button type="button" class="btn btn-primary" id="fmSaveBtn" style="padding: 0.65rem;">Simpan</button>
+            <button type="button" class="btn btn-wa" id="fmShareWaBtn" style="padding: 0.65rem;">
+              <svg class="ico ico-sm" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+              <span>Kirim WA</span>
+            </button>
+          </div>
+
+          <div class="btn-group" id="fmHolderActionRow" style="display: none; margin-top: 0.55rem;">
+            <button type="button" class="btn-sm" id="fmAuditContinueBtn" style="justify-content: center; padding: 0.58rem;">Perpanjang 3 Bln</button>
+            <button type="button" class="btn-danger-outline" id="fmFinishBtn" style="padding: 0.58rem;">Selesai & Kembalikan</button>
+          </div>
+
+          <div id="fmFinishConfirmBox" style="display: none; margin-top: 0.65rem; padding: 0.75rem; border-radius: 14px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+              <label for="fmTglSelesai" style="font-size: 0.76rem; font-weight: 600; color: var(--danger); margin: 0;">Tanggal Selesai</label>
+              <div style="display: flex; gap: 0.35rem;">
+                <button type="button" id="fmSetFinishYesterdayBtn" class="btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;">Kemarin</button>
+                <button type="button" id="fmSetFinishTodayBtn" class="btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;">Hari Ini</button>
+              </div>
+            </div>
+            <div class="field" style="margin-bottom: 0.55rem;">
+              <input type="date" id="fmTglSelesai" lang="id-ID">
+            </div>
+            <div class="btn-group">
+              <button type="button" class="btn-sm" id="fmCancelFinishBtn" style="justify-content: center; padding: 0.52rem;">Batal</button>
+              <button type="button" class="btn-danger-outline" id="fmConfirmFinishBtn" style="padding: 0.52rem; background: rgba(239, 68, 68, 0.2);">Konfirmasi</button>
+            </div>
+          </div>
+
+          <div class="subtle-history-wrap" style="margin-top: 0.75rem; padding-top: 0.6rem;">
+            <button type="button" class="subtle-history-bar" id="fmToggleHistoryBarBtn">
+              <span id="fmHistorySummaryText" style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Belum ada riwayat sebelumnya.</span>
+              <svg class="ico ico-sm" id="fmHistoryChevron" viewBox="0 0 24 24" style="display: none; flex-shrink: 0; transition: transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="fmHistoryDrawer" style="display: none; margin-top: 0.45rem;">
+              <div style="display: flex; justify-content: flex-end; margin-bottom: 0.3rem;">
+                <button type="button" class="btn-reset-mini" id="fmToggleEditHistoryBtn" style="display: none;">Kelola Riwayat</button>
+              </div>
+              <div id="fmHistoryList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- HALAMAN 4: KELOLA ANGGOTA -->
@@ -1987,8 +2182,15 @@
 
     let map = null;
     let currentPolygon = null;
+
+    // State untuk Peta Sebaran & Floating Editor
     let fullMap = null;
     let fullMapLayerGroup = null;
+    let fullMapPolygons = {};
+    let fullMapInitialFitted = false;
+    let fmSelectedId = null;
+    let fmEditHistoryMode = false;
+    let fmToastTimer = null;
 
     function emailToKey(email) {
       return email.toLowerCase().trim().replace(/\./g, ",");
@@ -2362,7 +2564,15 @@
         renderNotifications();
         renderList();
         if (hasBulkAccess) renderBulkList();
-        if (document.getElementById("pageFullMap").style.display === "block") renderFullMap();
+
+        // Update Peta Sebaran TANPA mereset posisi/zoom kamera
+        if (document.getElementById("pageFullMap").style.display === "block") {
+          renderFullMap(false);
+          if (fmSelectedId && allTerritories[fmSelectedId] && document.getElementById("fmFloatingCard").style.display === "block") {
+            renderFmHistoryList(allTerritories[fmSelectedId]);
+          }
+        }
+
         if (selectedId && allTerritories[selectedId] && document.getElementById("detailCard").style.display === "block") {
           renderHistoryList(allTerritories[selectedId]);
         }
@@ -2549,7 +2759,7 @@
       }).join("");
     }
 
-    // === INSPECTOR / DETAIL PETA KANAN ===
+    // === INSPECTOR / DETAIL PETA KANAN (KELOLA PETA) ===
     function closeDetailPanel() {
       selectedId = null;
       document.getElementById("detailCard").style.display = "none";
@@ -2644,7 +2854,6 @@
       const numPrefix = t.nomor ? `#${t.nomor} — ` : "";
       document.getElementById("mNama").textContent = `${numPrefix}${cleanTerritoryName(t)}`;
 
-      // Tombol Buka My Maps / Google Maps untuk semua pengguna
       const openMyMapsBtn = document.getElementById("openMyMapsBtn");
       const openMyMapsText = document.getElementById("openMyMapsText");
       const hasMyMaps = Boolean((t.mymaps_url || "").trim());
@@ -2707,7 +2916,6 @@
       }, 80);
     };
 
-    // Buka Google My Maps / Google Maps
     document.getElementById("openMyMapsBtn")?.addEventListener("click", () => {
       if (!selectedId) return;
       const t = allTerritories[selectedId];
@@ -2724,14 +2932,18 @@
       }
     });
 
-    // Loncat ke Peta Sebaran dan zoom ke kartu yang dipilih
+    // Loncat ke Peta Sebaran dan buka floating editor di peta yang dipilih
     document.getElementById("viewOnFullMapBtn")?.addEventListener("click", () => {
       const targetId = selectedId;
       switchPage("pageFullMap");
-      if (targetId && allTerritories[targetId]?.koordinat?.length > 0 && fullMap) {
+      if (targetId && allTerritories[targetId]?.koordinat?.length > 0) {
         setTimeout(() => {
-          const bounds = L.polygon(allTerritories[targetId].koordinat).getBounds();
-          fullMap.fitBounds(bounds, { padding: [60, 60], maxZoom: 17 });
+          if (fullMap) {
+            const bounds = L.polygon(allTerritories[targetId].koordinat).getBounds();
+            fullMap.fitBounds(bounds, { padding: [60, 60], maxZoom: 17 });
+            fullMapInitialFitted = true;
+          }
+          openFmFloatingEditor(targetId);
         }, 120);
       }
     });
@@ -2861,15 +3073,332 @@
       openDetail(selectedId);
     });
 
-    // === PETA SEBARAN KESELURUHAN ===
-    function renderFullMap() {
+    // === PETA SEBARAN KESELURUHAN + FLOATING EDITOR ===
+    function showFmToast(msg) {
+      const toast = document.getElementById("fmSaveToast");
+      const textEl = document.getElementById("fmSaveToastText");
+      if (!toast || !textEl) return;
+      textEl.textContent = msg;
+      toast.style.display = "flex";
+      clearTimeout(fmToastTimer);
+      fmToastTimer = setTimeout(() => {
+        toast.style.display = "none";
+      }, 2400);
+    }
+
+    function highlightFullMapSelection() {
+      Object.entries(fullMapPolygons).forEach(([id, poly]) => {
+        const isSelected = id === fmSelectedId;
+        poly.setStyle({
+          weight: isSelected ? 4 : 2,
+          fillOpacity: isSelected ? 0.42 : 0.25
+        });
+        if (isSelected) poly.bringToFront();
+      });
+    }
+
+    function closeFmFloatingEditor() {
+      fmSelectedId = null;
+      document.getElementById("fmFloatingCard").style.display = "none";
+      highlightFullMapSelection();
+    }
+
+    document.getElementById("fmCloseBtn")?.addEventListener("click", closeFmFloatingEditor);
+
+    function renderFmHistoryList(t) {
+      const histEl = document.getElementById("fmHistoryList");
+      const toggleBtn = document.getElementById("fmToggleEditHistoryBtn");
+      const summaryEl = document.getElementById("fmHistorySummaryText");
+      const chevEl = document.getElementById("fmHistoryChevron");
+      const drawerEl = document.getElementById("fmHistoryDrawer");
+      const entries = t.riwayat ? Object.entries(t.riwayat).reverse() : [];
+
+      if (entries.length === 0) {
+        summaryEl.textContent = "Belum ada riwayat pengerjaan.";
+        chevEl.style.display = "none";
+        drawerEl.style.display = "none";
+        toggleBtn.style.display = "none";
+        histEl.innerHTML = "";
+        return;
+      }
+
+      const [, latest] = entries[0];
+      const latestDateLabel = formatDateDDMMYYYY(latest.tanggal_kembali || latest.tanggal_mulai);
+      summaryEl.textContent = `Riwayat (${entries.length}): Terakhir ${latest.pemegang} (${latestDateLabel})`;
+      chevEl.style.display = "block";
+      toggleBtn.style.display = hasTipe1Access ? "inline-flex" : "none";
+      toggleBtn.textContent = fmEditHistoryMode ? "Selesai Kelola" : "Kelola Riwayat";
+
+      histEl.innerHTML = entries.map(([histKey, r]) => `
+        <div class="hist-item">
+          <div style="min-width: 0; flex: 1;">
+            <strong>${r.pemegang}</strong>
+            <div style="color:var(--muted); font-size:0.72rem;">${r.keterangan || ''}</div>
+          </div>
+          <div style="text-align:right; font-size:0.72rem; color:var(--muted); flex-shrink: 0;">
+            ${formatDateDDMMYYYY(r.tanggal_mulai)}<br>s/d ${formatDateDDMMYYYY(r.tanggal_kembali)}
+          </div>
+          ${fmEditHistoryMode ? `
+            <button type="button" class="btn-sm btn-logout" style="padding: 0.25rem 0.5rem; margin-left: 0.35rem; font-size: 0.72rem;" onclick="deleteFmHistoryItem('${histKey}', '${(r.pemegang || '').replace(/'/g, "\\'")}')">
+              Hapus
+            </button>
+          ` : ''}
+        </div>
+      `).join("");
+    }
+
+    document.getElementById("fmToggleHistoryBarBtn")?.addEventListener("click", () => {
+      const drawer = document.getElementById("fmHistoryDrawer");
+      const chev = document.getElementById("fmHistoryChevron");
+      if (!document.getElementById("fmHistoryList").innerHTML.trim()) return;
+      const isOpen = drawer.style.display === "block";
+      drawer.style.display = isOpen ? "none" : "block";
+      chev.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+    });
+
+    document.getElementById("fmToggleEditHistoryBtn")?.addEventListener("click", () => {
+      if (!fmSelectedId || !allTerritories[fmSelectedId]) return;
+      fmEditHistoryMode = !fmEditHistoryMode;
+      renderFmHistoryList(allTerritories[fmSelectedId]);
+    });
+
+    window.deleteFmHistoryItem = async function (histKey, pemegangName) {
+      if (!fmSelectedId || !hasTipe1Access) return;
+      if (!confirm(`Hapus permanen catatan riwayat atas nama "${pemegangName}"?`)) return;
+      await remove(ref(db, `territories/${fmSelectedId}/riwayat/${histKey}`));
+    };
+
+    document.getElementById("fmToggleAttrBtn")?.addEventListener("click", () => {
+      const body = document.getElementById("fmAttrBody");
+      const chev = document.getElementById("fmAttrChevron");
+      const isOpen = body.style.display === "block";
+      body.style.display = isOpen ? "none" : "block";
+      chev.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+    });
+
+    window.openFmFloatingEditor = function (id, preserveToast = false) {
+      fmSelectedId = id;
+      fmEditHistoryMode = false;
+      const t = allTerritories[id];
+      if (!t) return;
+
+      highlightFullMapSelection();
+
+      const card = document.getElementById("fmFloatingCard");
+      card.style.display = "block";
+      if (!preserveToast) {
+        document.getElementById("fmSaveToast").style.display = "none";
+      }
+
+      document.getElementById("fmKdlBadge").textContent = t.kdl || "Belum Masuk KDL";
+      const numPrefix = t.nomor ? `#${t.nomor} — ` : "";
+      document.getElementById("fmNama").textContent = `${numPrefix}${cleanTerritoryName(t)}`;
+
+      const openMyMapsBtn = document.getElementById("fmOpenMyMapsBtn");
+      const openMyMapsText = document.getElementById("fmOpenMyMapsText");
+      const hasMyMaps = Boolean((t.mymaps_url || "").trim());
+      const hasCoords = Boolean(t.koordinat && t.koordinat.length > 0);
+      if (hasMyMaps || hasCoords) {
+        openMyMapsBtn.style.display = "inline-flex";
+        openMyMapsText.textContent = hasMyMaps ? "My Maps" : "Maps";
+      } else {
+        openMyMapsBtn.style.display = "none";
+      }
+
+      const inpPemegang = document.getElementById("fmPemegang");
+      const inpTglMulai = document.getElementById("fmTglMulai");
+      const inpCatatan = document.getElementById("fmCatatan");
+
+      inpPemegang.value = t.pemegang || "";
+      inpTglMulai.value = t.tanggal_mulai || "";
+      inpCatatan.value = t.catatan || "";
+
+      document.getElementById("fmNamaDaerah").value = t.nama || "";
+      document.getElementById("fmKategori").value = t.kategori || "Umum";
+      document.getElementById("fmKdlPeta").value = t.kdl || "";
+      document.getElementById("fmMyMapsUrl").value = t.mymaps_url || "";
+      document.getElementById("fmKunjunganPw").checked = Boolean(t.kunjungan_pw);
+      document.getElementById("fmDaerahKelompok").checked = Boolean(t.daerah_kelompok);
+
+      document.getElementById("fmAttrBody").style.display = "none";
+      document.getElementById("fmAttrChevron").style.transform = "rotate(0deg)";
+      document.getElementById("fmHistoryDrawer").style.display = "none";
+      document.getElementById("fmFinishConfirmBox").style.display = "none";
+      document.getElementById("fmHistoryChevron").style.transform = "rotate(0deg)";
+
+      inpPemegang.disabled = !canEditTerritory;
+      inpTglMulai.disabled = !canEditTerritory;
+      inpCatatan.disabled = !canEditTerritory;
+
+      document.getElementById("fmAttrPanel").style.display = canEditTerritory ? "block" : "none";
+      document.getElementById("fmKdlField").style.display = hasTipe1Access ? "block" : "none";
+
+      document.getElementById("fmViewOnlyNotice").style.display = canEditTerritory ? "none" : "flex";
+      document.getElementById("fmSaveBtn").style.display = canEditTerritory ? "inline-flex" : "none";
+      document.getElementById("fmPrimaryActionRow").style.gridTemplateColumns = canEditTerritory ? "1fr 1fr" : "1fr";
+
+      const hasHolder = t.pemegang && t.pemegang.trim() !== "";
+      document.getElementById("fmHolderActionRow").style.display = (canEditTerritory && hasHolder) ? "grid" : "none";
+
+      renderFmHistoryList(t);
+    };
+
+    document.getElementById("fmOpenMyMapsBtn")?.addEventListener("click", () => {
+      if (!fmSelectedId) return;
+      const t = allTerritories[fmSelectedId];
+      if (!t) return;
+
+      const myMapsUrl = (document.getElementById("fmMyMapsUrl")?.value || t.mymaps_url || "").trim();
+      if (myMapsUrl) {
+        window.open(myMapsUrl, "_blank", "noopener");
+        return;
+      }
+      if (t.koordinat && t.koordinat.length > 0) {
+        const center = L.polygon(t.koordinat).getBounds().getCenter();
+        window.open(`https://maps.google.com/?q=${center.lat.toFixed(6)},${center.lng.toFixed(6)}`, "_blank", "noopener");
+      }
+    });
+
+    // Simpan dari Floating Editor TANPA mereset posisi & zoom Peta Sebaran
+    document.getElementById("fmSaveBtn")?.addEventListener("click", async () => {
+      if (!fmSelectedId || !canEditTerritory) return;
+      const t = allTerritories[fmSelectedId];
+      const pemegang = document.getElementById("fmPemegang").value.trim();
+      const tglMulai = document.getElementById("fmTglMulai").value;
+      let jatuhTempo = "";
+      const isNewCycle = tglMulai !== t.tanggal_mulai || !t.jatuh_tempo_audit;
+
+      if (pemegang && tglMulai) {
+        jatuhTempo = isNewCycle ? addThreeMonths(tglMulai) : t.jatuh_tempo_audit;
+      }
+
+      const payload = {
+        pemegang,
+        status: pemegang ? "Sedang Dikerjakan" : "Tersedia",
+        tanggal_mulai: tglMulai,
+        jatuh_tempo_audit: jatuhTempo,
+        catatan: document.getElementById("fmCatatan").value.trim(),
+        nama: document.getElementById("fmNamaDaerah").value.trim() || t.nama || "",
+        kategori: document.getElementById("fmKategori").value,
+        mymaps_url: document.getElementById("fmMyMapsUrl").value.trim(),
+        kunjungan_pw: document.getElementById("fmKunjunganPw").checked,
+        daerah_kelompok: document.getElementById("fmDaerahKelompok").checked
+      };
+
+      if (!pemegang || isNewCycle) payload.audit_notified_at = "";
+      if (hasTipe1Access) payload.kdl = document.getElementById("fmKdlPeta").value;
+
+      await update(ref(db, `territories/${fmSelectedId}`), payload);
+      openFmFloatingEditor(fmSelectedId, true);
+      showFmToast("Perubahan berhasil disimpan.");
+    });
+
+    document.getElementById("fmShareWaBtn")?.addEventListener("click", () => {
+      if (!fmSelectedId) return;
+      const t = allTerritories[fmSelectedId];
+      if (!t) return;
+
+      const namaPeta = cleanTerritoryName(t);
+      const pemegangVal = document.getElementById("fmPemegang").value.trim();
+      const tglMulaiVal = document.getElementById("fmTglMulai").value;
+      const catatanVal = document.getElementById("fmCatatan").value.trim();
+      const myMapsVal = document.getElementById("fmMyMapsUrl").value.trim() || (t.mymaps_url || "").trim();
+
+      let mapsLink = "";
+      if (myMapsVal) mapsLink = `🗺️ Peta My Maps: ${myMapsVal}`;
+      else if (t.koordinat && t.koordinat.length > 0) {
+        const center = L.polygon(t.koordinat).getBounds().getCenter();
+        mapsLink = `📍 Lokasi Maps: https://maps.google.com/?q=${center.lat.toFixed(6)},${center.lng.toFixed(6)}`;
+      }
+
+      const lines = [
+        `*PETA DAERAH — ${namaPeta.toUpperCase()}*`,
+        pemegangVal ? `• Pemegang: ${pemegangVal}` : `• Status: Tersedia`,
+        tglMulaiVal ? `• Mulai: ${formatDateDDMMYYYY(tglMulaiVal)}` : null,
+        catatanVal ? `• Catatan: ${catatanVal}` : null,
+        mapsLink
+      ].filter(Boolean);
+
+      window.open(`https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`, "_blank");
+    });
+
+    document.getElementById("fmAuditContinueBtn")?.addEventListener("click", async () => {
+      if (!fmSelectedId || !canEditTerritory) return;
+      const pemegang = document.getElementById("fmPemegang").value.trim();
+      if (!pemegang) return;
+      const today = getLocalDateStr(0);
+
+      await push(ref(db, `territories/${fmSelectedId}/riwayat`), {
+        pemegang,
+        tanggal_mulai: document.getElementById("fmTglMulai").value || today,
+        keterangan: `Audit 3 Bln (${formatDateDDMMYYYY(today)}): Lanjut`,
+        tanggal_kembali: today
+      });
+      await update(ref(db, `territories/${fmSelectedId}`), {
+        tanggal_mulai: today,
+        jatuh_tempo_audit: addThreeMonths(today),
+        audit_notified_at: ""
+      });
+      openFmFloatingEditor(fmSelectedId, true);
+      showFmToast("Masa pengerjaan diperpanjang 3 bulan.");
+    });
+
+    document.getElementById("fmFinishBtn")?.addEventListener("click", () => {
+      if (!fmSelectedId || !canEditTerritory) return;
+      const tglInput = document.getElementById("fmTglSelesai");
+      tglInput.value = getLocalDateStr(0);
+      tglInput.max = getLocalDateStr(0);
+      document.getElementById("fmHolderActionRow").style.display = "none";
+      document.getElementById("fmFinishConfirmBox").style.display = "block";
+    });
+
+    document.getElementById("fmSetFinishYesterdayBtn")?.addEventListener("click", () => {
+      document.getElementById("fmTglSelesai").value = getLocalDateStr(-1);
+    });
+    document.getElementById("fmSetFinishTodayBtn")?.addEventListener("click", () => {
+      document.getElementById("fmTglSelesai").value = getLocalDateStr(0);
+    });
+    document.getElementById("fmCancelFinishBtn")?.addEventListener("click", () => {
+      document.getElementById("fmFinishConfirmBox").style.display = "none";
+      document.getElementById("fmHolderActionRow").style.display = "grid";
+    });
+
+    document.getElementById("fmConfirmFinishBtn")?.addEventListener("click", async () => {
+      if (!fmSelectedId || !canEditTerritory) return;
+      const pemegang = document.getElementById("fmPemegang").value.trim();
+      if (!pemegang) return;
+      const tglSelesai = document.getElementById("fmTglSelesai").value || getLocalDateStr(0);
+
+      await push(ref(db, `territories/${fmSelectedId}/riwayat`), {
+        pemegang,
+        tanggal_mulai: document.getElementById("fmTglMulai").value || tglSelesai,
+        keterangan: "Selesai & Dikembalikan",
+        tanggal_kembali: tglSelesai
+      });
+      await update(ref(db, `territories/${fmSelectedId}`), {
+        pemegang: "",
+        status: "Tersedia",
+        tanggal_mulai: "",
+        jatuh_tempo_audit: "",
+        audit_notified_at: "",
+        catatan: ""
+      });
+      document.getElementById("fmFinishConfirmBox").style.display = "none";
+      openFmFloatingEditor(fmSelectedId, true);
+      showFmToast("Peta ditandai selesai & dikembalikan.");
+    });
+
+    // shouldRefit = true hanya saat pertama kali buka peta atau filter KDL/Status diganti
+    function renderFullMap(shouldRefit = false) {
       if (!fullMap) {
         fullMap = L.map("fullMapCanvas").setView([-6.89, 109.25], 11);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OSM" }).addTo(fullMap);
         fullMapLayerGroup = L.layerGroup().addTo(fullMap);
+        shouldRefit = true;
       }
       fullMap.invalidateSize();
       fullMapLayerGroup.clearLayers();
+      fullMapPolygons = {};
 
       const kdlFilter = document.getElementById("fullMapKdlSelect").value;
       const statusFilter = document.getElementById("fullMapStatusSelect").value;
@@ -2894,30 +3423,34 @@
         else if (isWorking) { color = "#2563eb"; statusLabel = `Aktif (${t.pemegang})`; }
         else if (hasHistory) { color = "#f59e0b"; statusLabel = "Selesai"; }
 
+        const isSelected = t.id === fmSelectedId;
         const poly = L.polygon(t.koordinat, {
           color,
-          weight: 2,
-          fillOpacity: 0.25
+          weight: isSelected ? 4 : 2,
+          fillOpacity: isSelected ? 0.42 : 0.25
         });
 
         poly.bindTooltip(`<strong>#${t.nomor} ${cleanTerritoryName(t)}</strong><br>${statusLabel}`, { sticky: true });
-        poly.on("click", () => {
-          switchPage("pageTerritories");
-          openDetail(t.id);
+        poly.on("click", (e) => {
+          L.DomEvent.stopPropagation(e);
+          openFmFloatingEditor(t.id);
         });
 
         poly.addTo(fullMapLayerGroup);
+        fullMapPolygons[t.id] = poly;
+        if (isSelected) poly.bringToFront();
         boundsList.push(poly.getBounds());
       });
 
-      if (boundsList.length > 0) {
+      if ((shouldRefit || !fullMapInitialFitted) && boundsList.length > 0) {
         const groupBounds = boundsList.reduce((acc, b) => acc.extend(b), L.latLngBounds(boundsList[0]));
         fullMap.fitBounds(groupBounds, { padding: [30, 30] });
+        fullMapInitialFitted = true;
       }
     }
 
-    document.getElementById("fullMapKdlSelect")?.addEventListener("change", renderFullMap);
-    document.getElementById("fullMapStatusSelect")?.addEventListener("change", renderFullMap);
+    document.getElementById("fullMapKdlSelect")?.addEventListener("change", () => renderFullMap(true));
+    document.getElementById("fullMapStatusSelect")?.addEventListener("change", () => renderFullMap(true));
 
     // === BULK EDITOR ===
     function getBulkFilteredTerritories() {
@@ -3051,7 +3584,7 @@
       document.querySelectorAll(".dtab-btn").forEach(b => b.classList.toggle("active", b.dataset.page === pageId));
 
       if (pageId === "pageBulk") renderBulkList();
-      if (pageId === "pageFullMap") setTimeout(renderFullMap, 60);
+      if (pageId === "pageFullMap") setTimeout(() => renderFullMap(false), 60);
       updateBulkSelectionUI();
     };
 
@@ -3072,7 +3605,6 @@
       btn.addEventListener("click", () => switchPage(btn.dataset.page));
     });
 
-    // Tombol Pindah Manual ke Tampilan Mobile
     document.getElementById("switchMobileBtn")?.addEventListener("click", () => {
       sessionStorage.removeItem("forceMode");
       sessionStorage.setItem("forceMode", "mobile");
