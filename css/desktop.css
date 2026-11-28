@@ -207,7 +207,7 @@ svg.ico-sm { width: 15px; height: 15px; }
 .dk-tag { background: rgba(16, 185, 129, 0.14); color: #059669; }
 
 .badge { font-size: 0.68rem; font-weight: 700; padding: 0.22rem 0.55rem; border-radius: 99px; flex-shrink: 0; }
-.b-avail { background: rgba(16, 185, 129, 0.14); color: var(--success); }
+.b-avail { background: rgba(148, 163, 184, 0.16);  color: var(--muted);  border: 1px solid rgba(148, 163, 184, 0.28); }
 .b-work { background: rgba(37, 99, 235, 0.14); color: var(--primary); }
 .b-due { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
 

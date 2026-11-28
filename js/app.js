@@ -62,6 +62,21 @@ function getLocalDateStr(offsetDays = 0) {
   return `${year}-${month}-${day}`;
 }
 
+function shiftDateStr(dateStr, offsetDays) {
+  if (!dateStr) return "";
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(y, m - 1, d + offsetDays);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+}
+
+function formatDateDDMMYYYY(dateStr) {
+  if (!dateStr) return "-";
+  const clean = String(dateStr).trim().split("T")[0];
+  const parts = clean.split("-");
+  if (parts.length !== 3) return dateStr;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
 function normalizeMember(m) {
   let roleDaerah = m.role_daerah || "";
   if (!roleDaerah && m.role) {
@@ -223,7 +238,7 @@ onAuthStateChanged(auth, async (user) => {
 
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get("filter") === "due") {
-    openFilteredList("DUE");
+    openFilteredList("ATTENTION");
   }
 });
 
@@ -232,11 +247,11 @@ function isMyTerritory(t) {
   return Boolean(currentProfile.kdl) && (t.kdl || "") === currentProfile.kdl;
 }
 
-// Siklus Audit 3 Bulan
-function addThreeMonths(dateStr) {
+// Siklus Audit 4 Bulan + Pengingat Awal 3,5 Bulan (H-14 sebelum jatuh tempo)
+function addFourMonths(dateStr) {
   if (!dateStr) return "";
   const [y, m, day] = dateStr.split("-").map(Number);
-  const d = new Date(y, m - 1 + 3, day);
+  const d = new Date(y, m - 1 + 4, day);
   if (d.getDate() !== day) {
     d.setDate(0);
   }
@@ -250,6 +265,18 @@ function isAuditDue(t) {
   if (!t.pemegang || !t.jatuh_tempo_audit) return false;
   const today = getLocalDateStr(0);
   return t.jatuh_tempo_audit <= today;
+}
+
+function isAuditWarning(t) {
+  if (!t.pemegang || !t.jatuh_tempo_audit) return false;
+  if (isAuditDue(t)) return false;
+  const today = getLocalDateStr(0);
+  const warnStart = shiftDateStr(t.jatuh_tempo_audit, -14);
+  return today >= warnStart && today < t.jatuh_tempo_audit;
+}
+
+function isAuditAttention(t) {
+  return isAuditDue(t) || isAuditWarning(t);
 }
 
 // Peta dianggap "Dikerjakan" jika sedang dipegang ATAU sudah punya riwayat pengerjaan
@@ -482,19 +509,21 @@ function renderHomeOverview() {
   const workingCount = mineList.filter(t => isWorkedTerritory(t)).length;
   const availCount = mineList.length - workingCount;
   const dueCount = mineList.filter(t => isAuditDue(t)).length;
+  const attentionCount = mineList.filter(t => isAuditAttention(t)).length;
 
   document.getElementById("ovTotal").textContent = mineList.length;
   document.getElementById("ovWork").textContent = workingCount;
   document.getElementById("ovAvail").textContent = availCount;
 
   const alertEl = document.getElementById("homeAuditAlert");
-  if (dueCount > 0) {
+  if (attentionCount > 0) {
     alertEl.style.display = "flex";
-    document.getElementById("alertDueCount").textContent = dueCount;
+    document.getElementById("alertDueCount").textContent = attentionCount;
+    alertEl.classList.toggle("is-warning", dueCount === 0);
   } else {
     alertEl.style.display = "none";
   }
-
+  
   const visibleKdls = hasTipe1Access ? KDL_LIST : [currentProfile.kdl];
   document.getElementById("breakdownTitle").textContent = hasTipe1Access ? "Sebaran per KDL" : "Ringkasan Wilayah";
 
@@ -554,7 +583,9 @@ function updateFilterUI() {
   else if (tagQuickFilter === "PW") activeTags.push("KPW");
 
   if (statusQuickFilter === "work") activeTags.push("Aktif");
+  else if (statusQuickFilter === "WARN") activeTags.push("Segera Audit");
   else if (statusQuickFilter === "DUE") activeTags.push("Perlu Audit");
+  else if (statusQuickFilter === "ATTENTION") activeTags.push("Mendekati / Perlu Audit");
   else if (statusQuickFilter === "done") activeTags.push("Selesai");
   else if (statusQuickFilter === "avail") activeTags.push("Kosong");
 
@@ -603,7 +634,9 @@ function getVisibleTerritories() {
       const isWorking = Boolean(t.pemegang && t.pemegang.trim() !== "");
       const hasHistory = Boolean(t.riwayat && Object.keys(t.riwayat).length > 0);
       if (statusQuickFilter === "work" && !isWorking) return false;
+      if (statusQuickFilter === "WARN" && !isAuditWarning(t)) return false;
       if (statusQuickFilter === "DUE" && !isAuditDue(t)) return false;
+      if (statusQuickFilter === "ATTENTION" && !isAuditAttention(t)) return false;
       if (statusQuickFilter === "done" && (isWorking || !hasHistory)) return false;
       if (statusQuickFilter === "avail" && (isWorking || hasHistory)) return false;
 
@@ -630,12 +663,14 @@ function renderList() {
 
   container.innerHTML = filtered.map(t => {
     const due = isAuditDue(t);
+    const warn = isAuditWarning(t);
     const isWorking = Boolean(t.pemegang && t.pemegang.trim() !== "");
     const hasHistory = Boolean(t.riwayat && Object.keys(t.riwayat).length > 0);
     const selClass = (t.id === selectedId) ? "is-selected-desktop" : "";
 
     let badge = `<span class="badge b-avail">Kosong</span>`;
     if (due) badge = `<span class="badge b-due">Audit</span>`;
+    else if (warn) badge = `<span class="badge b-warn">Segera Audit</span>`;
     else if (isWorking) badge = `<span class="badge b-work">Aktif</span>`;
     else if (hasHistory) badge = `<span class="badge b-done">Selesai</span>`;
 
@@ -650,8 +685,10 @@ function renderList() {
       subText = `Terakhir: ${last.pemegang} • ${kdlLabel}`;
     }
 
+    const stateClass = due ? "is-due" : (warn ? "is-warn" : "");
+
     return `
-      <div class="list-item ${due ? 'is-due' : ''} ${selClass}" onclick="openDetail('${t.id}')">
+      <div class="list-item ${stateClass} ${selClass}" onclick="openDetail('${t.id}')">
         <div class="item-left">
           <span class="item-num">#${t.nomor}</span>
           <div class="item-info">
@@ -809,6 +846,7 @@ document.getElementById("applyBulkBtn")?.addEventListener("click", async () => {
       updates[`territories/${id}/tanggal_mulai`] = "";
       updates[`territories/${id}/jatuh_tempo_audit`] = "";
       updates[`territories/${id}/audit_notified_at`] = "";
+      updates[`territories/${id}/audit_warned_at`] = "";
       updates[`territories/${id}/catatan`] = "";
     }
   });
@@ -861,7 +899,7 @@ window.openFilteredList = function(filterVal, statusFilter = "", tipeFilter = ""
   tagQuickFilter = tipeFilter;
   statusQuickFilter = statusFilter;
 
-  if (filterVal === "DUE") statusQuickFilter = "DUE";
+  if (filterVal === "DUE" || filterVal === "WARN" || filterVal === "ATTENTION") statusQuickFilter = filterVal;
   else if (filterVal === "PW" || filterVal === "DK" || filterVal === "UMUM") tagQuickFilter = filterVal;
   else if (filterVal === "UNASSIGNED" || filterVal.startsWith("KDL ")) activeKdlFilter = filterVal;
 
@@ -941,6 +979,42 @@ document.querySelectorAll(".bnav-btn, .dnav-btn").forEach(btn => {
 });
 
 // === PANEL DETAIL & EDITOR PETA ===
+function syncMyMapsButton() {
+  const myMapsInput = document.getElementById("fMyMapsUrl");
+  const openMyMapsBtn = document.getElementById("openMyMapsBtn");
+  const openMyMapsText = document.getElementById("openMyMapsText");
+  const titleEl = document.getElementById("mNama");
+  if (!myMapsInput || !openMyMapsBtn) return;
+
+  const url = (myMapsInput.value || "").trim();
+  if (url && /^https?:\/\//i.test(url)) {
+    openMyMapsBtn.href = url;
+    openMyMapsBtn.style.display = "inline-flex";
+
+    // Jika nama daerah panjang (> 22 karakter), tampilkan lingkaran ikon saja di sebelah tombol X
+    const titleLen = (titleEl?.textContent || "").trim().length;
+    const isLongTitle = titleLen > 22;
+
+    if (openMyMapsText) {
+      openMyMapsText.style.display = isLongTitle ? "none" : "inline";
+    }
+    openMyMapsBtn.style.padding = isLongTitle ? "0" : "0 0.75rem";
+    openMyMapsBtn.style.width = isLongTitle ? "34px" : "auto";
+  } else {
+    openMyMapsBtn.href = "#";
+    openMyMapsBtn.style.display = "none";
+  }
+}
+
+document.getElementById("fMyMapsUrl")?.addEventListener("input", syncMyMapsButton);
+document.getElementById("fNamaDaerah")?.addEventListener("input", () => {
+  const t = allTerritories[selectedId];
+  const numPrefix = t?.nomor ? `#${t.nomor} — ` : "";
+  const val = document.getElementById("fNamaDaerah").value.trim() || `Daerah ${t?.nomor || ""}`;
+  document.getElementById("mNama").textContent = `${numPrefix}${val}`;
+  syncMyMapsButton();
+});
+
 function closeModal() {
   document.getElementById("detailModal").style.display = "none";
   document.documentElement.style.overflow = "";
@@ -971,8 +1045,9 @@ function renderHistoryList(t) {
   }
 
   const [, latest] = entries[0];
+  const latestDateLabel = formatDateDDMMYYYY(latest.tanggal_kembali || latest.tanggal_mulai);
   if (summaryEl) {
-    summaryEl.textContent = `Riwayat (${entries.length}): Terakhir ${latest.pemegang} (${latest.tanggal_kembali || latest.tanggal_mulai || '-'})`;
+    summaryEl.textContent = `Riwayat (${entries.length}): Terakhir ${latest.pemegang} (${latestDateLabel})`;
   }
   if (chevEl) chevEl.style.display = "block";
 
@@ -988,10 +1063,10 @@ function renderHistoryList(t) {
         <div style="color:var(--muted); font-size:0.7rem;">${r.keterangan || ''}</div>
       </div>
       <div style="text-align:right; font-size:0.7rem; color:var(--muted); flex-shrink: 0;">
-        ${r.tanggal_mulai || '-'}<br>s/d ${r.tanggal_kembali || '-'}
+        ${formatDateDDMMYYYY(r.tanggal_mulai)}<br>s/d ${formatDateDDMMYYYY(r.tanggal_kembali)}
       </div>
       ${editHistoryMode ? `
-        <button type="button" class="btn-sm btn-logout" style="padding: 0.25rem 0.45rem; margin-left: 0.35rem; font-size: 0.7rem;" onclick="deleteHistoryItem('${histKey}', '${(r.pemegang || '').replace(/'/g, "\\'")}')">
+        <button type="button" class="btn-sm btn-logout" style="padding: 0.2rem 0.45rem; margin-left: 0.35rem; font-size: 0.7rem;" onclick="deleteHistoryItem('${histKey}', '${(r.pemegang || '').replace(/'/g, "\\'")}')">
           Hapus
         </button>
       ` : ''}
@@ -1002,8 +1077,8 @@ function renderHistoryList(t) {
 document.getElementById("toggleHistoryBarBtn")?.addEventListener("click", () => {
   const drawer = document.getElementById("historyDrawer");
   const chev = document.getElementById("historyChevron");
-  if (!drawer || !document.getElementById("historyList")?.innerHTML.trim()) return;
-
+  const hasItems = Boolean(document.getElementById("historyList")?.innerHTML.trim());
+  if (!drawer || !hasItems) return;
   const isOpen = drawer.style.display === "block";
   drawer.style.display = isOpen ? "none" : "block";
   if (chev) chev.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
@@ -1017,10 +1092,11 @@ document.getElementById("toggleEditHistoryBtn")?.addEventListener("click", () =>
 
 window.deleteHistoryItem = async function(histKey, pemegangName) {
   if (!selectedId || !hasTipe1Access) return;
-  if (!confirm(`Hapus permanen catatan riwayat atas nama "${pemegangName}"? Tindakan ini tidak bisa dibatalkan.`)) return;
+  if (!confirm(`Hapus permanen catatan riwayat atas nama "${pemegangName}"?`)) return;
   await remove(ref(db, `territories/${selectedId}/riwayat/${histKey}`));
 };
 
+// Accordion Edit Info & Atribut Peta
 document.getElementById("toggleAttrBtn")?.addEventListener("click", () => {
   const body = document.getElementById("attrBody");
   const chev = document.getElementById("attrChevron");
@@ -1035,8 +1111,7 @@ window.openDetail = function(id) {
   const t = allTerritories[id];
   if (!t) return;
 
-  const kdlMini = document.getElementById("detailKdlBadge");
-  if (kdlMini) kdlMini.textContent = t.kdl || "Belum diatur KDL";
+  if (isDesktopViewport()) renderList();
 
   const numPrefix = t.nomor ? `#${t.nomor} — ` : "";
   document.getElementById("mNama").textContent = `${numPrefix}${cleanTerritoryName(t)}`;
@@ -1044,51 +1119,75 @@ window.openDetail = function(id) {
   const inpPemegang = document.getElementById("fPemegang");
   const inpTglMulai = document.getElementById("fTglMulai");
   const inpCatatan = document.getElementById("fCatatan");
+  const inpNamaDaerah = document.getElementById("fNamaDaerah");
+  const selKategori = document.getElementById("fKategori");
+  const selKdl = document.getElementById("fKdlPeta");
+  const inpMyMaps = document.getElementById("fMyMapsUrl");
+  const chkPw = document.getElementById("fKunjunganPw");
+  const chkDk = document.getElementById("fDaerahKelompok");
 
   inpPemegang.value = t.pemegang || "";
   inpTglMulai.value = t.tanggal_mulai || "";
   inpCatatan.value = t.catatan || "";
 
-  document.getElementById("fNamaDaerah").value = t.nama || "";
-  document.getElementById("fKategori").value = t.kategori || "Umum";
-  document.getElementById("fKdlPeta").value = t.kdl || "";
-  document.getElementById("fMyMapsUrl").value = t.mymaps_url || "";
-  document.getElementById("fKunjunganPw").checked = Boolean(t.kunjungan_pw);
-  document.getElementById("fDaerahKelompok").checked = Boolean(t.daerah_kelompok);
+  if (inpNamaDaerah) inpNamaDaerah.value = t.nama || "";
+  if (selKategori) selKategori.value = t.kategori || "Umum";
+  if (selKdl) selKdl.value = t.kdl || "";
+  if (inpMyMaps) inpMyMaps.value = t.mymaps_url || "";
+  if (chkPw) chkPw.checked = Boolean(t.kunjungan_pw);
+  if (chkDk) chkDk.checked = Boolean(t.daerah_kelompok);
 
-  document.getElementById("attrBody").style.display = "none";
-  document.getElementById("attrChevron").style.transform = "rotate(0deg)";
-  document.getElementById("historyDrawer").style.display = "none";
-  document.getElementById("finishConfirmBox").style.display = "none";
-  document.getElementById("historyChevron").style.transform = "rotate(0deg)";
+  // Sinkronkan tombol Buka My Maps di header detail modal
+  syncMyMapsButton();
 
+  // Lipat panel atribut & riwayat secara default saat modal baru dibuka
+  const attrBody = document.getElementById("attrBody");
+  const attrChev = document.getElementById("attrChevron");
+  if (attrBody) attrBody.style.display = "none";
+  if (attrChev) attrChev.style.transform = "rotate(0deg)";
+
+  const histDrawer = document.getElementById("historyDrawer");
+  const histChev = document.getElementById("historyChevron");
+  const finishBox = document.getElementById("finishConfirmBox");
+  if (histDrawer) histDrawer.style.display = "none";
+  if (histChev) histChev.style.transform = "rotate(0deg)";
+  if (finishBox) finishBox.style.display = "none";
+
+  // Kunci form jika akun hanya Anggota (View-Only)
   inpPemegang.disabled = !canEditTerritory;
   inpTglMulai.disabled = !canEditTerritory;
   inpCatatan.disabled = !canEditTerritory;
 
-  document.getElementById("attrPanel").style.display = canEditTerritory ? "block" : "none";
-  document.getElementById("fKdlField").style.display = hasTipe1Access ? "block" : "none";
+  const attrPanel = document.getElementById("attrPanel");
+  if (attrPanel) attrPanel.style.display = canEditTerritory ? "block" : "none";
 
-  document.getElementById("viewOnlyNotice").style.display = canEditTerritory ? "none" : "block";
-  document.getElementById("saveBtn").style.display = canEditTerritory ? "inline-flex" : "none";
-  document.getElementById("primaryActionRow").style.gridTemplateColumns = canEditTerritory ? "1fr 1fr" : "1fr";
+  const fKdlField = document.getElementById("fKdlField");
+  if (fKdlField) fKdlField.style.display = hasTipe1Access ? "block" : "none";
+
+  const voNotice = document.getElementById("viewOnlyNotice");
+  if (voNotice) voNotice.style.display = canEditTerritory ? "none" : "flex";
+
+  const saveBtn = document.getElementById("saveBtn");
+  const primaryRow = document.getElementById("primaryActionRow");
+  if (saveBtn) saveBtn.style.display = canEditTerritory ? "inline-flex" : "none";
+  if (primaryRow) primaryRow.style.gridTemplateColumns = canEditTerritory ? "1fr 1fr" : "1fr";
 
   const hasHolder = t.pemegang && t.pemegang.trim() !== "";
-  document.getElementById("holderActionRow").style.display = (canEditTerritory && hasHolder) ? "grid" : "none";
+  const holderActionRow = document.getElementById("holderActionRow");
+  if (holderActionRow) {
+    holderActionRow.style.display = (canEditTerritory && hasHolder) ? "grid" : "none";
+  }
 
   renderHistoryList(t);
 
   const emptyEl = document.getElementById("desktopEmptyInspector");
   if (emptyEl) emptyEl.style.display = "none";
 
-  const modalEl = document.querySelector("#detailModal .modal");
   document.getElementById("detailModal").style.display = "flex";
   if (!isDesktopViewport()) {
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
   }
-  if (modalEl) modalEl.scrollTop = 0;
-  renderList();
 
   setTimeout(() => {
     if (!map) {
@@ -1101,9 +1200,10 @@ window.openDetail = function(id) {
       currentPolygon = L.polygon(t.koordinat, { color: "#2563eb", fillOpacity: 0.25 }).addTo(map);
       map.fitBounds(currentPolygon.getBounds(), { padding: [20, 20] });
     }
-  }, 120);
+  }, 150);
 };
 
+// === SIMPAN & KIRIM WA ===
 document.getElementById("saveBtn")?.addEventListener("click", async () => {
   if (!selectedId || !canEditTerritory) return;
   const t = allTerritories[selectedId];
@@ -1113,7 +1213,7 @@ document.getElementById("saveBtn")?.addEventListener("click", async () => {
   const isNewCycle = tglMulai !== t.tanggal_mulai || !t.jatuh_tempo_audit;
 
   if (pemegang && tglMulai) {
-    jatuhTempo = isNewCycle ? addThreeMonths(tglMulai) : t.jatuh_tempo_audit;
+    jatuhTempo = isNewCycle ? addFourMonths(tglMulai) : t.jatuh_tempo_audit;
   }
 
   const payload = {
@@ -1122,25 +1222,24 @@ document.getElementById("saveBtn")?.addEventListener("click", async () => {
     tanggal_mulai: tglMulai,
     jatuh_tempo_audit: jatuhTempo,
     catatan: document.getElementById("fCatatan").value.trim(),
-    nama: document.getElementById("fNamaDaerah").value.trim() || t.nama || "",
-    kategori: document.getElementById("fKategori").value,
-    mymaps_url: document.getElementById("fMyMapsUrl").value.trim(),
-    kunjungan_pw: document.getElementById("fKunjunganPw").checked,
-    daerah_kelompok: document.getElementById("fDaerahKelompok").checked
+    nama: document.getElementById("fNamaDaerah")?.value.trim() || t.nama || "",
+    kategori: document.getElementById("fKategori")?.value || "Umum",
+    mymaps_url: document.getElementById("fMyMapsUrl")?.value.trim() || "",
+    kunjungan_pw: Boolean(document.getElementById("fKunjunganPw")?.checked),
+    daerah_kelompok: Boolean(document.getElementById("fDaerahKelompok")?.checked)
   };
 
   if (!pemegang || isNewCycle) {
     payload.audit_notified_at = "";
+    payload.audit_warned_at = "";
   }
 
-  if (hasTipe1Access) payload.kdl = document.getElementById("fKdlPeta").value;
+  if (hasTipe1Access) {
+    payload.kdl = document.getElementById("fKdlPeta")?.value || "";
+  }
 
   await update(ref(db, `territories/${selectedId}`), payload);
-  if (!isDesktopViewport()) {
-    closeModal();
-  } else {
-    openDetail(selectedId);
-  }
+  closeModal();
 });
 
 document.getElementById("shareWaBtn")?.addEventListener("click", () => {
@@ -1152,7 +1251,7 @@ document.getElementById("shareWaBtn")?.addEventListener("click", () => {
   const pemegangVal = document.getElementById("fPemegang").value.trim();
   const tglMulaiVal = document.getElementById("fTglMulai").value;
   const catatanVal = document.getElementById("fCatatan").value.trim();
-  const myMapsVal = document.getElementById("fMyMapsUrl").value.trim() || (t.mymaps_url || "").trim();
+  const myMapsVal = document.getElementById("fMyMapsUrl")?.value.trim() || (t.mymaps_url || "").trim();
 
   let mapsLink = "";
   if (myMapsVal) {
@@ -1165,12 +1264,13 @@ document.getElementById("shareWaBtn")?.addEventListener("click", () => {
   const lines = [
     `*PETA DAERAH — ${namaPeta.toUpperCase()}*`,
     pemegangVal ? `• Pemegang: ${pemegangVal}` : `• Status: Tersedia`,
-    tglMulaiVal ? `• Mulai: ${tglMulaiVal}` : null,
+    tglMulaiVal ? `• Mulai: ${formatDateDDMMYYYY(tglMulaiVal)}` : null,
     catatanVal ? `• Catatan: ${catatanVal}` : null,
     mapsLink
   ].filter(Boolean);
 
-  window.open(`https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`, "_blank");
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`;
+  window.open(waUrl, "_blank");
 });
 
 document.getElementById("auditContinueBtn")?.addEventListener("click", async () => {
@@ -1178,31 +1278,32 @@ document.getElementById("auditContinueBtn")?.addEventListener("click", async () 
   const pemegang = document.getElementById("fPemegang").value.trim();
   if (!pemegang) return;
   const today = getLocalDateStr(0);
-  const nextDue = addThreeMonths(today);
 
   await push(ref(db, `territories/${selectedId}/riwayat`), {
     pemegang,
     tanggal_mulai: document.getElementById("fTglMulai").value || today,
-    keterangan: `Audit 3 Bln (${today}): Lanjut`,
+    keterangan: `Audit 4 Bln (${formatDateDDMMYYYY(today)}): Lanjut`,
     tanggal_kembali: today
   });
   await update(ref(db, `territories/${selectedId}`), {
     tanggal_mulai: today,
-    jatuh_tempo_audit: nextDue,
-    audit_notified_at: ""
+    jatuh_tempo_audit: addFourMonths(today),
+    audit_notified_at: "",
+    audit_warned_at: ""
   });
-  openDetail(selectedId);
+  closeModal();
 });
 
-// Selesai & Kembalikan (dengan pemilih tanggal)
+// Buka konfirmasi tanggal selesai
 document.getElementById("finishBtn")?.addEventListener("click", () => {
   if (!selectedId || !canEditTerritory) return;
   const pemegang = document.getElementById("fPemegang").value.trim();
   if (!pemegang) return;
 
-  const tglInput = document.getElementById("fTglSelesai");
-  tglInput.value = getLocalDateStr(0);
-  tglInput.max = getLocalDateStr(0);
+  const today = getLocalDateStr(0);
+  const inpSelesai = document.getElementById("fTglSelesai");
+  inpSelesai.value = today;
+  inpSelesai.max = today;
 
   document.getElementById("holderActionRow").style.display = "none";
   document.getElementById("finishConfirmBox").style.display = "block";
@@ -1234,49 +1335,100 @@ document.getElementById("confirmFinishBtn")?.addEventListener("click", async () 
     keterangan: "Selesai & Dikembalikan",
     tanggal_kembali: tglSelesai
   });
-
   await update(ref(db, `territories/${selectedId}`), {
     pemegang: "",
     status: "Tersedia",
     tanggal_mulai: "",
     jatuh_tempo_audit: "",
     audit_notified_at: "",
+    audit_warned_at: "",
     catatan: ""
   });
-
   document.getElementById("finishConfirmBox").style.display = "none";
-  openDetail(selectedId);
+  closeModal();
 });
 
-document.getElementById("closeModalBtn")?.addEventListener("click", closeModal);
-document.getElementById("searchInput")?.addEventListener("input", renderList);
-document.getElementById("logoutBtn")?.addEventListener("click", async () => {
-  await signOut(auth);
-  window.location.href = "index.html";
-});
+// === PETA SEBARAN KESELURUHAN ===
+function renderFullOverviewMap(shouldFit = true) {
+  const container = document.getElementById("fullMapContainer");
+  if (!container) return;
 
-// === TEMA GELAP / TERANG ===
-const themeToggle = document.getElementById("themeToggle");
-const themeIcon = document.getElementById("themeIcon");
-const moonSvg = `<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>`;
-const sunSvg = `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>`;
+  if (!overviewMap) {
+    overviewMap = L.map("fullMapContainer").setView([-6.89, 109.25], 11);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OSM" }).addTo(overviewMap);
+  }
+  overviewMap.invalidateSize();
 
-const savedTheme = localStorage.getItem("theme") || "light";
-document.documentElement.setAttribute("data-theme", savedTheme);
-if (themeIcon) themeIcon.innerHTML = savedTheme === "dark" ? sunSvg : moonSvg;
+  Object.values(overviewLayers).forEach(layer => overviewMap.removeLayer(layer));
+  overviewLayers = {};
 
-themeToggle?.addEventListener("click", () => {
-  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
-  document.documentElement.setAttribute("data-theme", next);
-  localStorage.setItem("theme", next);
-  if (themeIcon) themeIcon.innerHTML = next === "dark" ? sunSvg : moonSvg;
-});
+  const kdlFilter = document.getElementById("fullMapKdlSelect")?.value || "ALL";
+  const statusFilter = document.getElementById("fullMapStatusSelect")?.value || "ALL";
+  const boundsList = [];
 
-// === LOG & EXPORT S-13 ===
+  Object.values(allTerritories).forEach(t => {
+    if (!isMyTerritory(t) || !t.koordinat || t.koordinat.length === 0) return;
+    if (hasTipe1Access && kdlFilter !== "ALL" && t.kdl !== kdlFilter) return;
+
+    const due = isAuditDue(t);
+    const warn = isAuditWarning(t);
+    const isWorking = Boolean(t.pemegang && t.pemegang.trim() !== "");
+    const hasHistory = Boolean(t.riwayat && Object.keys(t.riwayat).length > 0);
+
+    if (statusFilter === "avail" && (isWorking || hasHistory)) return;
+    if (statusFilter === "work" && !isWorking) return;
+    if (statusFilter === "WARN" && !warn) return;
+    if (statusFilter === "DUE" && !due) return;
+    if (statusFilter === "done" && (isWorking || !hasHistory)) return;
+
+    let color = "#94a3b8";
+    let statusText = "Kosong";
+    if (due) {
+      color = "#ef4444";
+      statusText = `Perlu Audit (${t.pemegang})`;
+    } else if (warn) {
+      color = "#f59e0b";
+      statusText = `Segera Audit (${t.pemegang})`;
+    } else if (isWorking) {
+      color = "#2563eb";
+      statusText = `Aktif (${t.pemegang})`;
+    } else if (hasHistory) {
+      color = "#10b981";
+      statusText = "Selesai";
+    }
+
+    const poly = L.polygon(t.koordinat, {
+      color,
+      weight: 2,
+      fillOpacity: 0.25
+    }).addTo(overviewMap);
+
+    poly.bindTooltip(`<strong>#${t.nomor} ${cleanTerritoryName(t)}</strong><br>${statusText}`, { sticky: true });
+    poly.on("click", () => {
+      switchPage("pageTerritories");
+      openDetail(t.id);
+    });
+
+    overviewLayers[t.id] = poly;
+    boundsList.push(poly.getBounds());
+  });
+
+  if (shouldFit && boundsList.length > 0) {
+    const group = new L.featureGroup(Object.values(overviewLayers));
+    overviewMap.fitBounds(group.getBounds(), { padding: [25, 25] });
+    overviewRendered = true;
+  }
+}
+
+document.getElementById("fullMapKdlSelect")?.addEventListener("change", () => renderFullOverviewMap(true));
+document.getElementById("fullMapStatusSelect")?.addEventListener("change", () => renderFullOverviewMap(true));
+
+// === S-13 LOGS & PDF ===
 document.getElementById("toggleS13LogBtn")?.addEventListener("click", () => {
   const listEl = document.getElementById("s13LogList");
   const chevEl = document.getElementById("s13LogChevron");
-  if (!listEl || !listEl.innerHTML.trim()) return;
+  const hasLogs = Boolean(listEl && listEl.innerHTML.trim() !== "");
+  if (!hasLogs) return;
 
   const isOpen = listEl.style.display === "flex";
   listEl.style.display = isOpen ? "none" : "flex";
@@ -1288,40 +1440,34 @@ function listenS13Logs() {
   onValue(ref(db, "s13_logs"), (snap) => {
     const raw = snap.val() || {};
     const logs = Object.values(raw).sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""));
-
     const lastBarText = document.getElementById("s13LastLogText");
     const logListEl = document.getElementById("s13LogList");
     const chevEl = document.getElementById("s13LogChevron");
+    if (!lastBarText || !logListEl) return;
 
     if (logs.length === 0) {
-      if (lastBarText) lastBarText.textContent = "Belum ada riwayat generate S-13.";
-      if (logListEl) {
-        logListEl.innerHTML = "";
-        logListEl.style.display = "none";
-      }
+      lastBarText.textContent = "Belum ada riwayat generate S-13.";
+      logListEl.innerHTML = "";
+      logListEl.style.display = "none";
       if (chevEl) chevEl.style.display = "none";
       return;
     }
 
     const latest = logs[0];
-    if (lastBarText) {
-      lastBarText.textContent = `Terakhir: TD ${latest.tahun_dinas} • oleh ${latest.nama} (${latest.role_label}) • ${formatIndoTimestamp(latest.timestamp)}`;
-    }
+    lastBarText.textContent = `Terakhir: TD ${latest.tahun_dinas} • oleh ${latest.nama} (${latest.role_label}) • ${formatIndoTimestamp(latest.timestamp)}`;
     if (chevEl) chevEl.style.display = "block";
 
-    if (logListEl) {
-      logListEl.innerHTML = logs.slice(0, 5).map(item => `
-        <div class="hist-item">
-          <div style="min-width: 0; flex: 1;">
-            <strong>${item.nama}</strong> <span class="role-tag" style="margin-left: 0.25rem;">${item.role_label}</span>
-            <div style="color: var(--muted); font-size: 0.72rem; margin-top: 0.12rem;">Tahun Dinas ${item.tahun_dinas} • Semua KDL</div>
-          </div>
-          <div style="text-align: right; font-size: 0.72rem; color: var(--muted); flex-shrink: 0;">
-            ${formatIndoTimestamp(item.timestamp)}
-          </div>
+    logListEl.innerHTML = logs.slice(0, 5).map(item => `
+      <div class="hist-item">
+        <div style="min-width: 0; flex: 1;">
+          <strong>${item.nama}</strong> <span class="role-tag" style="margin-left: 0.25rem;">${item.role_label}</span>
+          <div style="color: var(--muted); font-size: 0.7rem; margin-top: 0.1rem;">Tahun Dinas ${item.tahun_dinas} • Semua KDL</div>
         </div>
-      `).join("");
-    }
+        <div style="text-align: right; font-size: 0.7rem; color: var(--muted); flex-shrink: 0;">
+          ${formatIndoTimestamp(item.timestamp)}
+        </div>
+      </div>
+    `).join("");
   });
 }
 
@@ -1329,22 +1475,20 @@ document.getElementById("openS13ModalBtn")?.addEventListener("click", () => {
   if (!hasTipe1Access) return;
   document.getElementById("s13Modal").style.display = "flex";
 });
-
 document.getElementById("closeS13ModalBtn")?.addEventListener("click", () => {
   document.getElementById("s13Modal").style.display = "none";
 });
-
 document.getElementById("downloadS13Btn")?.addEventListener("click", async () => {
   if (!hasTipe1Access) return;
   const year = parseInt(document.getElementById("s13YearSelect").value, 10);
-
   generateS13Pdf(allTerritories, year, "ALL");
 
-  const roleLabel = TIPE1_LABELS[currentProfile.role_daerah] || "Hamba Daerah";
+  const actorName = currentProfile.name || currentUser.email.split("@")[0];
+  const actorRole = TIPE1_LABELS[currentProfile.role_daerah] || "Hamba Daerah";
   await push(ref(db, "s13_logs"), {
-    nama: currentProfile.name || currentUser.email.split("@")[0],
+    nama: actorName,
     email: currentUser.email.toLowerCase(),
-    role_label: roleLabel,
+    role_label: actorRole,
     tahun_dinas: year,
     kdl: "ALL",
     timestamp: new Date().toISOString()
@@ -1353,18 +1497,15 @@ document.getElementById("downloadS13Btn")?.addEventListener("click", async () =>
   document.getElementById("s13Modal").style.display = "none";
 });
 
-// === NOTIFIKASI IN-APP (LONCENG HEADER) ===
+// === NOTIFIKASI IN-APP ===
 function renderNotifications() {
   const list = Object.values(allTerritories);
   const mineList = list.filter(t => isMyTerritory(t));
-
-  const dueCards = mineList
-    .filter(t => isAuditDue(t))
-    .sort(sortByTerritoryNumber);
-
+  const dueCards = mineList.filter(t => isAuditDue(t)).sort(sortByTerritoryNumber);
+  const warnCards = mineList.filter(t => isAuditWarning(t)).sort(sortByTerritoryNumber);
   const unassignedCount = hasTipe1Access ? list.filter(t => !t.kdl).length : 0;
 
-  const totalNotif = dueCards.length + (unassignedCount > 0 ? 1 : 0);
+  const totalNotif = dueCards.length + warnCards.length + (unassignedCount > 0 ? 1 : 0);
   const badgeEl = document.getElementById("notifBadgeCount");
   if (badgeEl) {
     if (totalNotif > 0) {
@@ -1383,41 +1524,49 @@ function renderNotifications() {
   if (totalNotif === 0) {
     if (subtitleEl) subtitleEl.textContent = "Semua kartu terpantau aman";
     if (viewAllBtn) viewAllBtn.style.display = "none";
-    container.innerHTML = `
-      <div style="padding: 1.75rem 1rem; text-align: center; color: var(--muted); font-size: 0.84rem;">
-        Belum ada notifikasi penting saat ini.
-      </div>
-    `;
+    container.innerHTML = `<div style="padding: 1.5rem 1rem; text-align: center; color: var(--muted); font-size: 0.82rem;">Belum ada notifikasi penting saat ini.</div>`;
     return;
   }
 
   if (subtitleEl) subtitleEl.textContent = `${totalNotif} pemberitahuan perlu ditindaklanjuti`;
-  if (viewAllBtn) viewAllBtn.style.display = dueCards.length > 0 ? "flex" : "none";
+  if (viewAllBtn) viewAllBtn.style.display = (dueCards.length + warnCards.length) > 0 ? "block" : "none";
 
   let html = "";
-
   if (unassignedCount > 0) {
     html += `
-      <div class="list-item" onclick="closeNotifModal(); openFilteredList('UNASSIGNED');" style="border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.08);">
+      <div class="list-item" onclick="closeNotifModal(); openFilteredList('UNASSIGNED');" style="border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 12px; background: rgba(245, 158, 11, 0.08);">
         <div class="item-info">
           <div class="item-title" style="color: var(--warning);">Peta Belum Masuk KDL</div>
           <div class="item-sub">Ada ${unassignedCount} peta belum diatur wilayah KDL-nya. Ketuk untuk cek.</div>
         </div>
-        <span class="badge b-due">Info</span>
+        <span class="badge b-warn">Info</span>
       </div>
     `;
   }
 
   html += dueCards.map(t => `
-    <div class="list-item is-due" onclick="closeNotifModal(); switchPage('pageTerritories'); openDetail('${t.id}');">
+    <div class="list-item is-due" onclick="closeNotifModal(); switchPage('pageTerritories'); openDetail('${t.id}');" style="border: 1px solid var(--border); border-radius: 12px;">
       <div class="item-left">
         <span class="item-num">#${t.nomor}</span>
         <div class="item-info">
           <div class="item-title">${cleanTerritoryName(t)}</div>
-          <div class="item-sub">${t.pemegang} • Jatuh tempo ${t.jatuh_tempo_audit}</div>
+          <div class="item-sub">${t.pemegang} • Jatuh tempo ${formatDateDDMMYYYY(t.jatuh_tempo_audit)}</div>
         </div>
       </div>
       <span class="badge b-due">Audit</span>
+    </div>
+  `).join("");
+
+  html += warnCards.map(t => `
+    <div class="list-item is-warn" onclick="closeNotifModal(); switchPage('pageTerritories'); openDetail('${t.id}');" style="border: 1px solid var(--border); border-radius: 12px;">
+      <div class="item-left">
+        <span class="item-num">#${t.nomor}</span>
+        <div class="item-info">
+          <div class="item-title">${cleanTerritoryName(t)}</div>
+          <div class="item-sub">${t.pemegang} • Segera jatuh tempo ${formatDateDDMMYYYY(t.jatuh_tempo_audit)}</div>
+        </div>
+      </div>
+      <span class="badge b-warn">Segera Audit</span>
     </div>
   `).join("");
 
@@ -1431,80 +1580,37 @@ window.closeNotifModal = function() {
 
 document.getElementById("notifBellBtn")?.addEventListener("click", () => {
   renderNotifications();
-  document.getElementById("notifModal").style.display = "flex";
+  const modal = document.getElementById("notifModal");
+  if (modal) modal.style.display = "flex";
 });
 
 document.getElementById("closeNotifModalBtn")?.addEventListener("click", closeNotifModal);
 
 document.getElementById("notifViewAllDueBtn")?.addEventListener("click", () => {
   closeNotifModal();
-  openFilteredList("DUE");
+  openFilteredList("ATTENTION");
 });
 
-// === PETA SEBARAN KESELURUHAN (TAB OPSIONAL DESKTOP) ===
-function renderFullOverviewMap(fitBounds = true) {
-  const mapEl = document.getElementById("fullOverviewMapContainer");
-  if (!mapEl) return;
+document.getElementById("searchInput")?.addEventListener("input", renderList);
+document.getElementById("closeModalBtn")?.addEventListener("click", closeModal);
+document.getElementById("logoutBtn")?.addEventListener("click", async () => {
+  await signOut(auth);
+  window.location.href = "index.html";
+});
 
-  if (!overviewMap) {
-    overviewMap = L.map("fullOverviewMapContainer").setView([-6.89, 109.25], 11);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OSM" }).addTo(overviewMap);
-  }
-  overviewMap.invalidateSize();
+// === TEMA GELAP / TERANG ===
+const themeToggle = document.getElementById("themeToggle");
+const themeIcon = document.getElementById("themeIcon");
+const moonSvg = `<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>`;
+const sunSvg = `<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>`;
 
-  const kdlFilter = document.getElementById("fullMapKdlSelect")?.value || "ALL";
-  const visibleList = Object.values(allTerritories).filter(t => {
-    if (!isMyTerritory(t)) return false;
-    if (kdlFilter !== "ALL" && t.kdl !== kdlFilter) return false;
-    return true;
-  });
+const savedTheme = localStorage.getItem("theme") || "light";
+document.documentElement.setAttribute("data-theme", savedTheme);
+themeIcon.innerHTML = savedTheme === "dark" ? sunSvg : moonSvg;
 
-  Object.values(overviewLayers).forEach(layer => overviewMap.removeLayer(layer));
-  overviewLayers = {};
-
-  const boundsGroup = [];
-  visibleList.forEach(t => {
-    if (!t.koordinat || t.koordinat.length === 0) return;
-    const due = isAuditDue(t);
-    const isWorking = Boolean(t.pemegang && t.pemegang.trim() !== "");
-    const hasHistory = Boolean(t.riwayat && Object.keys(t.riwayat).length > 0);
-
-    let color = "#10b981";
-    if (due) color = "#ef4444";
-    else if (isWorking) color = "#2563eb";
-    else if (hasHistory) color = "#f59e0b";
-
-    const poly = L.polygon(t.koordinat, {
-      color,
-      weight: 1.5,
-      fillColor: color,
-      fillOpacity: 0.2
-    }).addTo(overviewMap);
-
-    poly.bindTooltip(
-      `<strong>#${t.nomor}</strong> — ${cleanTerritoryName(t)}${t.pemegang ? ` (${t.pemegang})` : ""}`,
-      { sticky: true }
-    );
-
-    poly.on("click", () => {
-      switchPage("pageTerritories");
-      openDetail(t.id);
-    });
-
-    overviewLayers[t.id] = poly;
-    boundsGroup.push(poly);
-  });
-
-  if (fitBounds && boundsGroup.length > 0) {
-    overviewMap.fitBounds(L.featureGroup(boundsGroup).getBounds(), { padding: [24, 24] });
-  }
-  overviewRendered = true;
-}
-
-document.getElementById("fullMapKdlSelect")?.addEventListener("change", () => renderFullOverviewMap(true));
-document.getElementById("fitAllPolygonsBtn")?.addEventListener("click", () => {
-  const layers = Object.values(overviewLayers);
-  if (layers.length > 0 && overviewMap) {
-    overviewMap.fitBounds(L.featureGroup(layers).getBounds(), { padding: [24, 24] });
-  }
+themeToggle?.addEventListener("click", () => {
+  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  localStorage.setItem("theme", next);
+  themeIcon.innerHTML = next === "dark" ? sunSvg : moonSvg;
 });

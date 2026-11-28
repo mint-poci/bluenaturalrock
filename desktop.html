@@ -649,6 +649,10 @@
       background: var(--hover);
     }
 
+    .list-item.is-warn {
+      border-left: 4px solid var(--warning);
+    }
+
     .list-item.is-due {
       border-left: 4px solid var(--danger);
     }
@@ -733,10 +737,12 @@
       flex-shrink: 0;
     }
 
-    .b-avail { background: rgba(16, 185, 129, 0.14); color: var(--success); }
+    .b-avail { background: rgba(148, 163, 184, 0.16); color: var(--muted); border: 1px solid rgba(148, 163, 184, 0.28); }
     .b-work { background: rgba(37, 99, 235, 0.14); color: var(--primary); }
-    .b-done { background: rgba(245, 158, 11, 0.15); color: #d97706; }
-    [data-theme="dark"] .b-done { color: #fbbf24; }
+    .b-warn { background: rgba(245, 158, 11, 0.16); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3); }
+    [data-theme="dark"] .b-warn { color: #fbbf24; }
+    .badge.b-done { background: rgba(16, 185, 129, 0.14) !important; color: #059669 !important; border: 1px solid rgba(16, 185, 129, 0.32) !important; }
+    [data-theme="dark"] .badge.b-done { background: rgba(16, 185, 129, 0.18) !important; color: #34d399 !important; border: 1px solid rgba(16, 185, 129, 0.35) !important; }
     .b-due { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
 
     /* PANEL INSPECTOR KANAN */
@@ -868,6 +874,50 @@
     .field textarea:disabled {
       opacity: 0.68;
       cursor: not-allowed;
+    }
+
+    /* INPUT TANGGAL FORMAT DD/MM/YYYY KONSISTEN */
+    .date-ddmm-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .date-ddmm-wrap input[type="text"] {
+      padding-right: 2.35rem;
+    }
+
+    .date-picker-btn {
+      position: absolute;
+      right: 0.45rem;
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .date-picker-btn:hover {
+      background: var(--hover);
+      color: var(--primary);
+    }
+
+    .date-picker-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .date-native-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
     }
 
     .holder-date-grid {
@@ -1433,8 +1483,8 @@
             </div>
           </div>
 
-          <div class="alert-banner" id="homeAuditAlert" onclick="openFilteredList('DUE')">
-            <span>Ada <strong id="alertDueCount">0</strong> peta masuk jadwal audit 3 bulan.</span>
+          <div class="alert-banner" id="homeAuditAlert" onclick="openFilteredList('ATTENTION')">
+            <span>Ada <strong id="alertDueCount">0</strong> peta mendekati / masuk jadwal audit 4 bulan.</span>
             <strong>Cek Sekarang →</strong>
           </div>
 
@@ -1448,7 +1498,7 @@
               <span>Dikerjakan</span>
             </div>
             <div class="ov-card" onclick="openFilteredList('ALL', 'avail')">
-              <strong id="ovAvail" style="color: var(--success);">0</strong>
+              <strong id="ovAvail" style="color: var(--muted);">0</strong>
               <span>Tersedia</span>
             </div>
           </div>
@@ -1578,7 +1628,13 @@
               </div>
               <div class="field">
                 <label for="fTglMulai">Mulai</label>
-                <input type="date" id="fTglMulai" lang="id-ID">
+                <div class="date-ddmm-wrap">
+                  <input type="text" id="fTglMulai" inputmode="numeric" maxlength="10" placeholder="dd/mm/yyyy">
+                  <button type="button" class="date-picker-btn" id="fTglMulaiPickerBtn" title="Pilih Tanggal">
+                    <svg class="ico ico-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  </button>
+                  <input type="date" id="fTglMulaiNative" class="date-native-hidden" tabindex="-1">
+                </div>
               </div>
             </div>
 
@@ -1643,7 +1699,7 @@
             </div>
 
             <div class="btn-group" id="holderActionRow" style="display: none; margin-top: 0.6rem;">
-              <button type="button" class="btn-sm" id="auditContinueBtn" style="justify-content: center; padding: 0.68rem;">Perpanjang 3 Bulan</button>
+              <button type="button" class="btn-sm" id="auditContinueBtn" style="justify-content: center; padding: 0.68rem;">Perpanjang 4 Bulan</button>
               <button type="button" class="btn-danger-outline" id="finishBtn">Selesai & Kembalikan</button>
             </div>
 
@@ -1656,7 +1712,13 @@
                 </div>
               </div>
               <div class="field">
-                <input type="date" id="fTglSelesai" lang="id-ID">
+                <div class="date-ddmm-wrap">
+                  <input type="text" id="fTglSelesai" inputmode="numeric" maxlength="10" placeholder="dd/mm/yyyy">
+                  <button type="button" class="date-picker-btn" id="fTglSelesaiPickerBtn" title="Pilih Tanggal">
+                    <svg class="ico ico-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  </button>
+                  <input type="date" id="fTglSelesaiNative" class="date-native-hidden" tabindex="-1">
+                </div>
               </div>
               <div class="btn-group">
                 <button type="button" class="btn-sm" id="cancelFinishBtn" style="justify-content: center; padding: 0.6rem;">Batal</button>
@@ -1695,15 +1757,17 @@
             <option value="ALL">Semua Status</option>
             <option value="avail">Kosong / Tersedia</option>
             <option value="work">Aktif Dikerjakan</option>
+            <option value="WARN">Segera Audit</option>
             <option value="DUE">Perlu Audit</option>
             <option value="done">Sudah Selesai</option>
           </select>
         </div>
 
         <div class="map-legend">
-          <span><i style="background: #10b981;"></i> Kosong</span>
+          <span><i style="background: #94a3b8;"></i> Kosong</span>
           <span><i style="background: #2563eb;"></i> Aktif</span>
-          <span><i style="background: #f59e0b;"></i> Selesai</span>
+          <span><i style="background: #f59e0b;"></i> Segera Audit</span>
+          <span><i style="background: #10b981;"></i> Selesai</span>
           <span><i style="background: #ef4444;"></i> Perlu Audit</span>
         </div>
       </div>
@@ -1751,7 +1815,13 @@
             </div>
             <div class="field" style="margin-bottom: 0.65rem;">
               <label for="fmTglMulai">Mulai</label>
-              <input type="date" id="fmTglMulai" lang="id-ID">
+              <div class="date-ddmm-wrap">
+                <input type="text" id="fmTglMulai" inputmode="numeric" maxlength="10" placeholder="dd/mm/yyyy">
+                <button type="button" class="date-picker-btn" id="fmTglMulaiPickerBtn" title="Pilih Tanggal">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </button>
+                <input type="date" id="fmTglMulaiNative" class="date-native-hidden" tabindex="-1">
+              </div>
             </div>
           </div>
 
@@ -1816,7 +1886,7 @@
           </div>
 
           <div class="btn-group" id="fmHolderActionRow" style="display: none; margin-top: 0.55rem;">
-            <button type="button" class="btn-sm" id="fmAuditContinueBtn" style="justify-content: center; padding: 0.58rem;">Perpanjang 3 Bln</button>
+            <button type="button" class="btn-sm" id="fmAuditContinueBtn" style="justify-content: center; padding: 0.58rem;">Perpanjang 4 Bln</button>
             <button type="button" class="btn-danger-outline" id="fmFinishBtn" style="padding: 0.58rem;">Selesai & Kembalikan</button>
           </div>
 
@@ -1829,7 +1899,13 @@
               </div>
             </div>
             <div class="field" style="margin-bottom: 0.55rem;">
-              <input type="date" id="fmTglSelesai" lang="id-ID">
+              <div class="date-ddmm-wrap">
+                <input type="text" id="fmTglSelesai" inputmode="numeric" maxlength="10" placeholder="dd/mm/yyyy">
+                <button type="button" class="date-picker-btn" id="fmTglSelesaiPickerBtn" title="Pilih Tanggal">
+                  <svg class="ico ico-sm" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </button>
+                <input type="date" id="fmTglSelesaiNative" class="date-native-hidden" tabindex="-1">
+              </div>
             </div>
             <div class="btn-group">
               <button type="button" class="btn-sm" id="fmCancelFinishBtn" style="justify-content: center; padding: 0.52rem;">Batal</button>
@@ -1980,6 +2056,7 @@
         <div class="fchip-row" id="filterStatusGroup">
           <button type="button" class="fchip active" data-status="">Semua</button>
           <button type="button" class="fchip" data-status="work">Aktif</button>
+          <button type="button" class="fchip" data-status="WARN">Segera Audit</button>
           <button type="button" class="fchip" data-status="DUE">Perlu Audit</button>
           <button type="button" class="fchip" data-status="done">Selesai</button>
           <button type="button" class="fchip" data-status="avail">Kosong</button>
@@ -2202,13 +2279,89 @@
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     }
 
+    function shiftDateStr(dateStr, offsetDays) {
+      if (!dateStr) return "";
+      const [y, m, d] = dateStr.split("-").map(Number);
+      const dt = new Date(y, m - 1, d + offsetDays);
+      return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+    }
+
     function formatDateDDMMYYYY(dateStr) {
-      if (!dateStr) return "-";
+      if (!dateStr) return "";
       const clean = String(dateStr).trim().split("T")[0];
       const parts = clean.split("-");
       if (parts.length !== 3) return dateStr;
       return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
+
+    function parseDDMMYYYYToISO(val) {
+      const clean = String(val || "").trim();
+      if (!clean) return "";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) return clean;
+      const match = clean.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+      if (!match) return null;
+      const day = Number(match[1]);
+      const month = Number(match[2]);
+      const year = Number(match[3]);
+      const d = new Date(year, month - 1, day);
+      if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) return null;
+      return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    }
+
+    function bindDDMMInput(textId, nativeId, btnId) {
+      const textEl = document.getElementById(textId);
+      const nativeEl = document.getElementById(nativeId);
+      const btnEl = document.getElementById(btnId);
+      if (!textEl || !nativeEl || !btnEl) return;
+
+      textEl.addEventListener("input", () => {
+        const digits = textEl.value.replace(/\D/g, "").slice(0, 8);
+        let formatted = digits;
+        if (digits.length > 4) formatted = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+        else if (digits.length > 2) formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+        textEl.value = formatted;
+
+        const iso = parseDDMMYYYYToISO(formatted);
+        if (iso) nativeEl.value = iso;
+        else if (!formatted) nativeEl.value = "";
+      });
+
+      btnEl.addEventListener("click", () => {
+        if (textEl.disabled) return;
+        const iso = parseDDMMYYYYToISO(textEl.value);
+        if (iso) nativeEl.value = iso;
+        if (typeof nativeEl.showPicker === "function") nativeEl.showPicker();
+        else nativeEl.click();
+      });
+
+      nativeEl.addEventListener("change", () => {
+        textEl.value = nativeEl.value ? formatDateDDMMYYYY(nativeEl.value) : "";
+      });
+    }
+
+    function setDDMMValue(textId, nativeId, isoDate) {
+      const textEl = document.getElementById(textId);
+      const nativeEl = document.getElementById(nativeId);
+      if (textEl) textEl.value = isoDate ? formatDateDDMMYYYY(isoDate) : "";
+      if (nativeEl) nativeEl.value = isoDate || "";
+    }
+
+    function setDDMMDisabled(textId, btnId, disabled) {
+      const textEl = document.getElementById(textId);
+      const btnEl = document.getElementById(btnId);
+      if (textEl) textEl.disabled = disabled;
+      if (btnEl) btnEl.disabled = disabled;
+    }
+
+    function setDDMMMax(nativeId, maxIso) {
+      const nativeEl = document.getElementById(nativeId);
+      if (nativeEl) nativeEl.max = maxIso || "";
+    }
+
+    bindDDMMInput("fTglMulai", "fTglMulaiNative", "fTglMulaiPickerBtn");
+    bindDDMMInput("fTglSelesai", "fTglSelesaiNative", "fTglSelesaiPickerBtn");
+    bindDDMMInput("fmTglMulai", "fmTglMulaiNative", "fmTglMulaiPickerBtn");
+    bindDDMMInput("fmTglSelesai", "fmTglSelesaiNative", "fmTglSelesaiPickerBtn");
 
     function normalizeMember(m) {
       let roleDaerah = m.role_daerah || "";
@@ -2358,7 +2511,7 @@
 
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get("filter") === "due") {
-        openFilteredList("DUE");
+        openFilteredList("ATTENTION");
       }
     });
 
@@ -2367,10 +2520,11 @@
       return Boolean(currentProfile.kdl) && (t.kdl || "") === currentProfile.kdl;
     }
 
-    function addThreeMonths(dateStr) {
+    // Siklus Audit 4 Bulan + Pengingat Awal 3,5 Bulan (H-14 sebelum jatuh tempo)
+    function addFourMonths(dateStr) {
       if (!dateStr) return "";
       const [y, m, day] = dateStr.split("-").map(Number);
-      const d = new Date(y, m - 1 + 3, day);
+      const d = new Date(y, m - 1 + 4, day);
       if (d.getDate() !== day) d.setDate(0);
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     }
@@ -2378,6 +2532,18 @@
     function isAuditDue(t) {
       if (!t.pemegang || !t.jatuh_tempo_audit) return false;
       return t.jatuh_tempo_audit <= getLocalDateStr(0);
+    }
+
+    function isAuditWarning(t) {
+      if (!t.pemegang || !t.jatuh_tempo_audit) return false;
+      if (isAuditDue(t)) return false;
+      const today = getLocalDateStr(0);
+      const warnStart = shiftDateStr(t.jatuh_tempo_audit, -14);
+      return today >= warnStart && today < t.jatuh_tempo_audit;
+    }
+
+    function isAuditAttention(t) {
+      return isAuditDue(t) || isAuditWarning(t);
     }
 
     function isWorkedTerritory(t) {
@@ -2584,16 +2750,16 @@
       const mineList = list.filter(t => isMyTerritory(t));
       const workingCount = mineList.filter(t => isWorkedTerritory(t)).length;
       const availCount = mineList.length - workingCount;
-      const dueCount = mineList.filter(t => isAuditDue(t)).length;
+      const attentionCount = mineList.filter(t => isAuditAttention(t)).length;
 
       document.getElementById("ovTotal").textContent = mineList.length;
       document.getElementById("ovWork").textContent = workingCount;
       document.getElementById("ovAvail").textContent = availCount;
 
       const alertEl = document.getElementById("homeAuditAlert");
-      if (dueCount > 0) {
+      if (attentionCount > 0) {
         alertEl.style.display = "flex";
-        document.getElementById("alertDueCount").textContent = dueCount;
+        document.getElementById("alertDueCount").textContent = attentionCount;
       } else {
         alertEl.style.display = "none";
       }
@@ -2651,7 +2817,9 @@
       else if (tagQuickFilter === "PW") activeTags.push("KPW");
 
       if (statusQuickFilter === "work") activeTags.push("Aktif");
+      else if (statusQuickFilter === "WARN") activeTags.push("Segera Audit");
       else if (statusQuickFilter === "DUE") activeTags.push("Perlu Audit");
+      else if (statusQuickFilter === "ATTENTION") activeTags.push("Mendekati / Perlu Audit");
       else if (statusQuickFilter === "done") activeTags.push("Selesai");
       else if (statusQuickFilter === "avail") activeTags.push("Kosong");
 
@@ -2696,7 +2864,9 @@
           const isWorking = Boolean(t.pemegang && t.pemegang.trim() !== "");
           const hasHistory = Boolean(t.riwayat && Object.keys(t.riwayat).length > 0);
           if (statusQuickFilter === "work" && !isWorking) return false;
+          if (statusQuickFilter === "WARN" && !isAuditWarning(t)) return false;
           if (statusQuickFilter === "DUE" && !isAuditDue(t)) return false;
+          if (statusQuickFilter === "ATTENTION" && !isAuditAttention(t)) return false;
           if (statusQuickFilter === "done" && (isWorking || !hasHistory)) return false;
           if (statusQuickFilter === "avail" && (isWorking || hasHistory)) return false;
 
@@ -2722,12 +2892,14 @@
 
       container.innerHTML = filtered.map(t => {
         const due = isAuditDue(t);
+        const warn = isAuditWarning(t);
         const isWorking = Boolean(t.pemegang && t.pemegang.trim() !== "");
         const hasHistory = Boolean(t.riwayat && Object.keys(t.riwayat).length > 0);
         const isSelected = t.id === selectedId;
 
         let badge = `<span class="badge b-avail">Kosong</span>`;
         if (due) badge = `<span class="badge b-due">Audit</span>`;
+        else if (warn) badge = `<span class="badge b-warn">Segera Audit</span>`;
         else if (isWorking) badge = `<span class="badge b-work">Aktif</span>`;
         else if (hasHistory) badge = `<span class="badge b-done">Selesai</span>`;
 
@@ -2740,8 +2912,10 @@
           subText = `Terakhir: ${entries[entries.length - 1].pemegang} • ${kdlLabel}`;
         }
 
+        const stateClass = due ? "is-due" : (warn ? "is-warn" : "");
+
         return `
-          <div class="list-item ${due ? 'is-due' : ''} ${isSelected ? 'is-selected' : ''}" onclick="openDetail('${t.id}')">
+          <div class="list-item ${stateClass} ${isSelected ? 'is-selected' : ''}" onclick="openDetail('${t.id}')">
             <div class="item-left">
               <span class="item-num">#${t.nomor}</span>
               <div class="item-info">
@@ -2787,7 +2961,7 @@
       }
 
       const [, latest] = entries[0];
-      const latestDateLabel = formatDateDDMMYYYY(latest.tanggal_kembali || latest.tanggal_mulai);
+      const latestDateLabel = formatDateDDMMYYYY(latest.tanggal_kembali || latest.tanggal_mulai) || "-";
       summaryEl.textContent = `Riwayat (${entries.length}): Terakhir ${latest.pemegang} (${latestDateLabel})`;
       chevEl.style.display = "block";
       toggleBtn.style.display = hasTipe1Access ? "inline-flex" : "none";
@@ -2800,7 +2974,7 @@
             <div style="color:var(--muted); font-size:0.72rem;">${r.keterangan || ''}</div>
           </div>
           <div style="text-align:right; font-size:0.72rem; color:var(--muted); flex-shrink: 0;">
-            ${formatDateDDMMYYYY(r.tanggal_mulai)}<br>s/d ${formatDateDDMMYYYY(r.tanggal_kembali)}
+            ${formatDateDDMMYYYY(r.tanggal_mulai) || '-'}<br>s/d ${formatDateDDMMYYYY(r.tanggal_kembali) || '-'}
           </div>
           ${editHistoryMode ? `
             <button type="button" class="btn-sm btn-logout" style="padding: 0.25rem 0.5rem; margin-left: 0.35rem; font-size: 0.72rem;" onclick="deleteHistoryItem('${histKey}', '${(r.pemegang || '').replace(/'/g, "\\'")}')">
@@ -2866,11 +3040,10 @@
       }
 
       const inpPemegang = document.getElementById("fPemegang");
-      const inpTglMulai = document.getElementById("fTglMulai");
       const inpCatatan = document.getElementById("fCatatan");
 
       inpPemegang.value = t.pemegang || "";
-      inpTglMulai.value = t.tanggal_mulai || "";
+      setDDMMValue("fTglMulai", "fTglMulaiNative", t.tanggal_mulai || "");
       inpCatatan.value = t.catatan || "";
 
       document.getElementById("fNamaDaerah").value = t.nama || "";
@@ -2887,7 +3060,7 @@
       document.getElementById("historyChevron").style.transform = "rotate(0deg)";
 
       inpPemegang.disabled = !canEditTerritory;
-      inpTglMulai.disabled = !canEditTerritory;
+      setDDMMDisabled("fTglMulai", "fTglMulaiPickerBtn", !canEditTerritory);
       inpCatatan.disabled = !canEditTerritory;
 
       document.getElementById("attrPanel").style.display = canEditTerritory ? "block" : "none";
@@ -2952,12 +3125,18 @@
       if (!selectedId || !canEditTerritory) return;
       const t = allTerritories[selectedId];
       const pemegang = document.getElementById("fPemegang").value.trim();
-      const tglMulai = document.getElementById("fTglMulai").value;
+      const rawMulai = document.getElementById("fTglMulai").value;
+      const tglMulai = parseDDMMYYYYToISO(rawMulai);
+      if (rawMulai.trim() && tglMulai === null) {
+        alert("Format tanggal Mulai harus dd/mm/yyyy (contoh: 28/11/2026).");
+        return;
+      }
+
       let jatuhTempo = "";
       const isNewCycle = tglMulai !== t.tanggal_mulai || !t.jatuh_tempo_audit;
 
       if (pemegang && tglMulai) {
-        jatuhTempo = isNewCycle ? addThreeMonths(tglMulai) : t.jatuh_tempo_audit;
+        jatuhTempo = isNewCycle ? addFourMonths(tglMulai) : t.jatuh_tempo_audit;
       }
 
       const payload = {
@@ -2973,7 +3152,10 @@
         daerah_kelompok: document.getElementById("fDaerahKelompok").checked
       };
 
-      if (!pemegang || isNewCycle) payload.audit_notified_at = "";
+      if (!pemegang || isNewCycle) {
+        payload.audit_notified_at = "";
+        payload.audit_warned_at = "";
+      }
       if (hasTipe1Access) payload.kdl = document.getElementById("fKdlPeta").value;
 
       await update(ref(db, `territories/${selectedId}`), payload);
@@ -2987,7 +3169,7 @@
 
       const namaPeta = cleanTerritoryName(t);
       const pemegangVal = document.getElementById("fPemegang").value.trim();
-      const tglMulaiVal = document.getElementById("fTglMulai").value;
+      const tglMulaiVal = parseDDMMYYYYToISO(document.getElementById("fTglMulai").value) || document.getElementById("fTglMulai").value.trim();
       const catatanVal = document.getElementById("fCatatan").value.trim();
       const myMapsVal = document.getElementById("fMyMapsUrl").value.trim() || (t.mymaps_url || "").trim();
 
@@ -3014,35 +3196,37 @@
       const pemegang = document.getElementById("fPemegang").value.trim();
       if (!pemegang) return;
       const today = getLocalDateStr(0);
+      const tglMulaiIso = parseDDMMYYYYToISO(document.getElementById("fTglMulai").value) || today;
 
       await push(ref(db, `territories/${selectedId}/riwayat`), {
         pemegang,
-        tanggal_mulai: document.getElementById("fTglMulai").value || today,
-        keterangan: `Audit 3 Bln (${formatDateDDMMYYYY(today)}): Lanjut`,
+        tanggal_mulai: tglMulaiIso,
+        keterangan: `Audit 4 Bln (${formatDateDDMMYYYY(today)}): Lanjut`,
         tanggal_kembali: today
       });
       await update(ref(db, `territories/${selectedId}`), {
         tanggal_mulai: today,
-        jatuh_tempo_audit: addThreeMonths(today),
-        audit_notified_at: ""
+        jatuh_tempo_audit: addFourMonths(today),
+        audit_notified_at: "",
+        audit_warned_at: ""
       });
       openDetail(selectedId);
     });
 
     document.getElementById("finishBtn")?.addEventListener("click", () => {
       if (!selectedId || !canEditTerritory) return;
-      const tglInput = document.getElementById("fTglSelesai");
-      tglInput.value = getLocalDateStr(0);
-      tglInput.max = getLocalDateStr(0);
+      const today = getLocalDateStr(0);
+      setDDMMValue("fTglSelesai", "fTglSelesaiNative", today);
+      setDDMMMax("fTglSelesaiNative", today);
       document.getElementById("holderActionRow").style.display = "none";
       document.getElementById("finishConfirmBox").style.display = "block";
     });
 
     document.getElementById("setFinishYesterdayBtn")?.addEventListener("click", () => {
-      document.getElementById("fTglSelesai").value = getLocalDateStr(-1);
+      setDDMMValue("fTglSelesai", "fTglSelesaiNative", getLocalDateStr(-1));
     });
     document.getElementById("setFinishTodayBtn")?.addEventListener("click", () => {
-      document.getElementById("fTglSelesai").value = getLocalDateStr(0);
+      setDDMMValue("fTglSelesai", "fTglSelesaiNative", getLocalDateStr(0));
     });
     document.getElementById("cancelFinishBtn")?.addEventListener("click", () => {
       document.getElementById("finishConfirmBox").style.display = "none";
@@ -3053,11 +3237,19 @@
       if (!selectedId || !canEditTerritory) return;
       const pemegang = document.getElementById("fPemegang").value.trim();
       if (!pemegang) return;
-      const tglSelesai = document.getElementById("fTglSelesai").value || getLocalDateStr(0);
+
+      const rawSelesai = document.getElementById("fTglSelesai").value;
+      const parsedSelesai = parseDDMMYYYYToISO(rawSelesai);
+      if (rawSelesai.trim() && parsedSelesai === null) {
+        alert("Format tanggal Selesai harus dd/mm/yyyy (contoh: 28/11/2026).");
+        return;
+      }
+      const tglSelesai = parsedSelesai || getLocalDateStr(0);
+      const tglMulaiIso = parseDDMMYYYYToISO(document.getElementById("fTglMulai").value) || tglSelesai;
 
       await push(ref(db, `territories/${selectedId}/riwayat`), {
         pemegang,
-        tanggal_mulai: document.getElementById("fTglMulai").value || tglSelesai,
+        tanggal_mulai: tglMulaiIso,
         keterangan: "Selesai & Dikembalikan",
         tanggal_kembali: tglSelesai
       });
@@ -3067,6 +3259,7 @@
         tanggal_mulai: "",
         jatuh_tempo_audit: "",
         audit_notified_at: "",
+        audit_warned_at: "",
         catatan: ""
       });
       document.getElementById("finishConfirmBox").style.display = "none";
@@ -3123,7 +3316,7 @@
       }
 
       const [, latest] = entries[0];
-      const latestDateLabel = formatDateDDMMYYYY(latest.tanggal_kembali || latest.tanggal_mulai);
+      const latestDateLabel = formatDateDDMMYYYY(latest.tanggal_kembali || latest.tanggal_mulai) || "-";
       summaryEl.textContent = `Riwayat (${entries.length}): Terakhir ${latest.pemegang} (${latestDateLabel})`;
       chevEl.style.display = "block";
       toggleBtn.style.display = hasTipe1Access ? "inline-flex" : "none";
@@ -3136,7 +3329,7 @@
             <div style="color:var(--muted); font-size:0.72rem;">${r.keterangan || ''}</div>
           </div>
           <div style="text-align:right; font-size:0.72rem; color:var(--muted); flex-shrink: 0;">
-            ${formatDateDDMMYYYY(r.tanggal_mulai)}<br>s/d ${formatDateDDMMYYYY(r.tanggal_kembali)}
+            ${formatDateDDMMYYYY(r.tanggal_mulai) || '-'}<br>s/d ${formatDateDDMMYYYY(r.tanggal_kembali) || '-'}
           </div>
           ${fmEditHistoryMode ? `
             <button type="button" class="btn-sm btn-logout" style="padding: 0.25rem 0.5rem; margin-left: 0.35rem; font-size: 0.72rem;" onclick="deleteFmHistoryItem('${histKey}', '${(r.pemegang || '').replace(/'/g, "\\'")}')">
@@ -3206,11 +3399,10 @@
       }
 
       const inpPemegang = document.getElementById("fmPemegang");
-      const inpTglMulai = document.getElementById("fmTglMulai");
       const inpCatatan = document.getElementById("fmCatatan");
 
       inpPemegang.value = t.pemegang || "";
-      inpTglMulai.value = t.tanggal_mulai || "";
+      setDDMMValue("fmTglMulai", "fmTglMulaiNative", t.tanggal_mulai || "");
       inpCatatan.value = t.catatan || "";
 
       document.getElementById("fmNamaDaerah").value = t.nama || "";
@@ -3227,7 +3419,7 @@
       document.getElementById("fmHistoryChevron").style.transform = "rotate(0deg)";
 
       inpPemegang.disabled = !canEditTerritory;
-      inpTglMulai.disabled = !canEditTerritory;
+      setDDMMDisabled("fmTglMulai", "fmTglMulaiPickerBtn", !canEditTerritory);
       inpCatatan.disabled = !canEditTerritory;
 
       document.getElementById("fmAttrPanel").style.display = canEditTerritory ? "block" : "none";
@@ -3264,12 +3456,18 @@
       if (!fmSelectedId || !canEditTerritory) return;
       const t = allTerritories[fmSelectedId];
       const pemegang = document.getElementById("fmPemegang").value.trim();
-      const tglMulai = document.getElementById("fmTglMulai").value;
+      const rawMulai = document.getElementById("fmTglMulai").value;
+      const tglMulai = parseDDMMYYYYToISO(rawMulai);
+      if (rawMulai.trim() && tglMulai === null) {
+        alert("Format tanggal Mulai harus dd/mm/yyyy (contoh: 28/11/2026).");
+        return;
+      }
+
       let jatuhTempo = "";
       const isNewCycle = tglMulai !== t.tanggal_mulai || !t.jatuh_tempo_audit;
 
       if (pemegang && tglMulai) {
-        jatuhTempo = isNewCycle ? addThreeMonths(tglMulai) : t.jatuh_tempo_audit;
+        jatuhTempo = isNewCycle ? addFourMonths(tglMulai) : t.jatuh_tempo_audit;
       }
 
       const payload = {
@@ -3285,7 +3483,10 @@
         daerah_kelompok: document.getElementById("fmDaerahKelompok").checked
       };
 
-      if (!pemegang || isNewCycle) payload.audit_notified_at = "";
+      if (!pemegang || isNewCycle) {
+        payload.audit_notified_at = "";
+        payload.audit_warned_at = "";
+      }
       if (hasTipe1Access) payload.kdl = document.getElementById("fmKdlPeta").value;
 
       await update(ref(db, `territories/${fmSelectedId}`), payload);
@@ -3300,7 +3501,7 @@
 
       const namaPeta = cleanTerritoryName(t);
       const pemegangVal = document.getElementById("fmPemegang").value.trim();
-      const tglMulaiVal = document.getElementById("fmTglMulai").value;
+      const tglMulaiVal = parseDDMMYYYYToISO(document.getElementById("fmTglMulai").value) || document.getElementById("fmTglMulai").value.trim();
       const catatanVal = document.getElementById("fmCatatan").value.trim();
       const myMapsVal = document.getElementById("fmMyMapsUrl").value.trim() || (t.mymaps_url || "").trim();
 
@@ -3327,36 +3528,38 @@
       const pemegang = document.getElementById("fmPemegang").value.trim();
       if (!pemegang) return;
       const today = getLocalDateStr(0);
+      const tglMulaiIso = parseDDMMYYYYToISO(document.getElementById("fmTglMulai").value) || today;
 
       await push(ref(db, `territories/${fmSelectedId}/riwayat`), {
         pemegang,
-        tanggal_mulai: document.getElementById("fmTglMulai").value || today,
-        keterangan: `Audit 3 Bln (${formatDateDDMMYYYY(today)}): Lanjut`,
+        tanggal_mulai: tglMulaiIso,
+        keterangan: `Audit 4 Bln (${formatDateDDMMYYYY(today)}): Lanjut`,
         tanggal_kembali: today
       });
       await update(ref(db, `territories/${fmSelectedId}`), {
         tanggal_mulai: today,
-        jatuh_tempo_audit: addThreeMonths(today),
-        audit_notified_at: ""
+        jatuh_tempo_audit: addFourMonths(today),
+        audit_notified_at: "",
+        audit_warned_at: ""
       });
       openFmFloatingEditor(fmSelectedId, true);
-      showFmToast("Masa pengerjaan diperpanjang 3 bulan.");
+      showFmToast("Masa pengerjaan diperpanjang 4 bulan.");
     });
 
     document.getElementById("fmFinishBtn")?.addEventListener("click", () => {
       if (!fmSelectedId || !canEditTerritory) return;
-      const tglInput = document.getElementById("fmTglSelesai");
-      tglInput.value = getLocalDateStr(0);
-      tglInput.max = getLocalDateStr(0);
+      const today = getLocalDateStr(0);
+      setDDMMValue("fmTglSelesai", "fmTglSelesaiNative", today);
+      setDDMMMax("fmTglSelesaiNative", today);
       document.getElementById("fmHolderActionRow").style.display = "none";
       document.getElementById("fmFinishConfirmBox").style.display = "block";
     });
 
     document.getElementById("fmSetFinishYesterdayBtn")?.addEventListener("click", () => {
-      document.getElementById("fmTglSelesai").value = getLocalDateStr(-1);
+      setDDMMValue("fmTglSelesai", "fmTglSelesaiNative", getLocalDateStr(-1));
     });
     document.getElementById("fmSetFinishTodayBtn")?.addEventListener("click", () => {
-      document.getElementById("fmTglSelesai").value = getLocalDateStr(0);
+      setDDMMValue("fmTglSelesai", "fmTglSelesaiNative", getLocalDateStr(0));
     });
     document.getElementById("fmCancelFinishBtn")?.addEventListener("click", () => {
       document.getElementById("fmFinishConfirmBox").style.display = "none";
@@ -3367,11 +3570,19 @@
       if (!fmSelectedId || !canEditTerritory) return;
       const pemegang = document.getElementById("fmPemegang").value.trim();
       if (!pemegang) return;
-      const tglSelesai = document.getElementById("fmTglSelesai").value || getLocalDateStr(0);
+
+      const rawSelesai = document.getElementById("fmTglSelesai").value;
+      const parsedSelesai = parseDDMMYYYYToISO(rawSelesai);
+      if (rawSelesai.trim() && parsedSelesai === null) {
+        alert("Format tanggal Selesai harus dd/mm/yyyy (contoh: 28/11/2026).");
+        return;
+      }
+      const tglSelesai = parsedSelesai || getLocalDateStr(0);
+      const tglMulaiIso = parseDDMMYYYYToISO(document.getElementById("fmTglMulai").value) || tglSelesai;
 
       await push(ref(db, `territories/${fmSelectedId}/riwayat`), {
         pemegang,
-        tanggal_mulai: document.getElementById("fmTglMulai").value || tglSelesai,
+        tanggal_mulai: tglMulaiIso,
         keterangan: "Selesai & Dikembalikan",
         tanggal_kembali: tglSelesai
       });
@@ -3381,6 +3592,7 @@
         tanggal_mulai: "",
         jatuh_tempo_audit: "",
         audit_notified_at: "",
+        audit_warned_at: "",
         catatan: ""
       });
       document.getElementById("fmFinishConfirmBox").style.display = "none";
@@ -3409,19 +3621,22 @@
         if (kdlFilter !== "ALL" && t.kdl !== kdlFilter) return;
 
         const due = isAuditDue(t);
+        const warn = isAuditWarning(t);
         const isWorking = Boolean(t.pemegang && t.pemegang.trim() !== "");
         const hasHistory = Boolean(t.riwayat && Object.keys(t.riwayat).length > 0);
 
         if (statusFilter === "avail" && (isWorking || hasHistory)) return;
         if (statusFilter === "work" && !isWorking) return;
+        if (statusFilter === "WARN" && !warn) return;
         if (statusFilter === "DUE" && !due) return;
         if (statusFilter === "done" && (isWorking || !hasHistory)) return;
 
-        let color = "#10b981";
+        let color = "#94a3b8";
         let statusLabel = "Kosong";
-        if (due) { color = "#ef4444"; statusLabel = "Perlu Audit"; }
+        if (due) { color = "#ef4444"; statusLabel = `Perlu Audit (${t.pemegang})`; }
+        else if (warn) { color = "#f59e0b"; statusLabel = `Segera Audit (${t.pemegang})`; }
         else if (isWorking) { color = "#2563eb"; statusLabel = `Aktif (${t.pemegang})`; }
-        else if (hasHistory) { color = "#f59e0b"; statusLabel = "Selesai"; }
+        else if (hasHistory) { color = "#10b981"; statusLabel = "Selesai"; }
 
         const isSelected = t.id === fmSelectedId;
         const poly = L.polygon(t.koordinat, {
@@ -3563,6 +3778,7 @@
           updates[`territories/${id}/tanggal_mulai`] = "";
           updates[`territories/${id}/jatuh_tempo_audit`] = "";
           updates[`territories/${id}/audit_notified_at`] = "";
+          updates[`territories/${id}/audit_warned_at`] = "";
           updates[`territories/${id}/catatan`] = "";
         }
       });
@@ -3593,7 +3809,7 @@
       tagQuickFilter = tipeFilter;
       statusQuickFilter = statusFilter;
 
-      if (filterVal === "DUE") statusQuickFilter = "DUE";
+      if (filterVal === "DUE" || filterVal === "WARN" || filterVal === "ATTENTION") statusQuickFilter = filterVal;
       else if (["PW", "DK", "UMUM"].includes(filterVal)) tagQuickFilter = filterVal;
       else if (filterVal === "UNASSIGNED" || filterVal.startsWith("KDL ")) activeKdlFilter = filterVal;
 
@@ -3725,9 +3941,10 @@
       const list = Object.values(allTerritories);
       const mineList = list.filter(t => isMyTerritory(t));
       const dueCards = mineList.filter(t => isAuditDue(t)).sort(sortByTerritoryNumber);
+      const warnCards = mineList.filter(t => isAuditWarning(t)).sort(sortByTerritoryNumber);
       const unassignedCount = hasTipe1Access ? list.filter(t => !t.kdl).length : 0;
 
-      const totalNotif = dueCards.length + (unassignedCount > 0 ? 1 : 0);
+      const totalNotif = dueCards.length + warnCards.length + (unassignedCount > 0 ? 1 : 0);
       const badgeEl = document.getElementById("notifBadgeCount");
       if (totalNotif > 0) {
         badgeEl.textContent = totalNotif > 99 ? "99+" : totalNotif;
@@ -3748,7 +3965,7 @@
       }
 
       subtitleEl.textContent = `${totalNotif} pemberitahuan perlu ditindaklanjuti`;
-      viewAllBtn.style.display = dueCards.length > 0 ? "flex" : "none";
+      viewAllBtn.style.display = (dueCards.length + warnCards.length) > 0 ? "flex" : "none";
 
       let html = "";
       if (unassignedCount > 0) {
@@ -3758,7 +3975,7 @@
               <div class="item-title" style="color: var(--warning);">Peta Belum Masuk KDL</div>
               <div class="item-sub">Ada ${unassignedCount} peta belum diatur wilayah KDL-nya. Klik untuk cek.</div>
             </div>
-            <span class="badge b-due">Info</span>
+            <span class="badge b-warn">Info</span>
           </div>
         `;
       }
@@ -3776,6 +3993,19 @@
         </div>
       `).join("");
 
+      html += warnCards.map(t => `
+        <div class="list-item is-warn" onclick="closeNotifModal(); switchPage('pageTerritories'); openDetail('${t.id}');" style="border: 1px solid var(--border); border-radius: 12px;">
+          <div class="item-left">
+            <span class="item-num">#${t.nomor}</span>
+            <div class="item-info">
+              <div class="item-title">${cleanTerritoryName(t)}</div>
+              <div class="item-sub">${t.pemegang} • Segera jatuh tempo ${formatDateDDMMYYYY(t.jatuh_tempo_audit)}</div>
+            </div>
+          </div>
+          <span class="badge b-warn">Segera Audit</span>
+        </div>
+      `).join("");
+
       container.innerHTML = html;
     }
 
@@ -3789,7 +4019,7 @@
     document.getElementById("closeNotifModalBtn")?.addEventListener("click", closeNotifModal);
     document.getElementById("notifViewAllDueBtn")?.addEventListener("click", () => {
       closeNotifModal();
-      openFilteredList("DUE");
+      openFilteredList("ATTENTION");
     });
   </script>
 </body>
