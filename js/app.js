@@ -24,6 +24,9 @@ let currentProfile = { name: "Eden", role_daerah: "hamba_daerah", kdl: "", role_
 let hasTipe1Access = false;
 let hasBulkAccess = false;
 let canEditTerritory = false;
+function canEditThisTerritory(t) {
+  return Boolean(canEditTerritory || (t && t.daerah_kelompok));
+}
 let allTerritories = {};
 let allMembers = {};
 
@@ -1154,23 +1157,24 @@ window.openDetail = function(id) {
   if (finishBox) finishBox.style.display = "none";
 
   // Kunci form jika akun hanya Anggota (View-Only)
-  inpPemegang.disabled = !canEditTerritory;
-  inpTglMulai.disabled = !canEditTerritory;
-  inpCatatan.disabled = !canEditTerritory;
+  const canEdit = canEditThisTerritory(t);
+  inpPemegang.disabled = !canEdit;
+  inpTglMulai.disabled = !canEdit;
+  inpCatatan.disabled = !canEdit;
 
   const attrPanel = document.getElementById("attrPanel");
-  if (attrPanel) attrPanel.style.display = canEditTerritory ? "block" : "none";
+  if (attrPanel) attrPanel.style.display = canEdit ? "block" : "none";
 
   const fKdlField = document.getElementById("fKdlField");
   if (fKdlField) fKdlField.style.display = hasTipe1Access ? "block" : "none";
 
   const voNotice = document.getElementById("viewOnlyNotice");
-  if (voNotice) voNotice.style.display = canEditTerritory ? "none" : "flex";
+  if (voNotice) voNotice.style.display = canEdit ? "none" : "flex";
 
   const saveBtn = document.getElementById("saveBtn");
   const primaryRow = document.getElementById("primaryActionRow");
-  if (saveBtn) saveBtn.style.display = canEditTerritory ? "inline-flex" : "none";
-  if (primaryRow) primaryRow.style.gridTemplateColumns = canEditTerritory ? "1fr 1fr" : "1fr";
+  if (saveBtn) saveBtn.style.display = canEdit ? "inline-flex" : "none";
+  if (primaryRow) primaryRow.style.gridTemplateColumns = canEdit ? "1fr 1fr" : "1fr";
 
   const hasHolder = t.pemegang && t.pemegang.trim() !== "";
   const holderActionRow = document.getElementById("holderActionRow");
@@ -1397,10 +1401,12 @@ function renderFullOverviewMap(shouldFit = true) {
       statusText = "Selesai";
     }
 
+    const isEmpty = !due && !warn && !isWorking && !hasHistory;
     const poly = L.polygon(t.koordinat, {
-      color,
-      weight: 2,
-      fillOpacity: 0.25
+      color: isEmpty ? "#78716c" : color,
+      fillColor: isEmpty ? "#d6d3d1" : color,
+      weight: isEmpty ? 1.2 : 2,
+      fillOpacity: isEmpty ? 0.18 : 0.28
     }).addTo(overviewMap);
 
     poly.bindTooltip(`<strong>#${t.nomor} ${cleanTerritoryName(t)}</strong><br>${statusText}`, { sticky: true });
